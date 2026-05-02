@@ -28,6 +28,36 @@ const StudentManagement = () => {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'approved' })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setStudents(students.map(s => s.id === id ? { ...s, status: 'approved' } : s));
+    } catch (err) {
+      alert('Error approving student: ' + err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'rejected' })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setStudents(students.map(s => s.id === id ? { ...s, status: 'rejected' } : s));
+    } catch (err) {
+      alert('Error rejecting student: ' + err.message);
+    }
+  };
+
   const filteredStudents = students.filter(student => 
     student.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -82,18 +112,38 @@ const StudentManagement = () => {
                     <span style={{ 
                       padding: '0.25rem 0.75rem', 
                       borderRadius: '20px', 
-                      background: 'rgba(74, 222, 128, 0.1)', 
-                      color: '#4ade80',
-                      fontSize: '0.75rem'
+                      background: student.status === 'approved' ? 'rgba(74, 222, 128, 0.1)' : 
+                                 student.status === 'rejected' ? 'rgba(255, 77, 77, 0.1)' : 'rgba(251, 191, 36, 0.1)', 
+                      color: student.status === 'approved' ? '#4ade80' : 
+                             student.status === 'rejected' ? '#ff4d4d' : '#fbbf24',
+                      fontSize: '0.75rem',
+                      textTransform: 'capitalize'
                     }}>
-                      Active
+                      {student.status || 'Pending'}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.8rem' }}>
+                      {student.status === 'pending' && (
+                        <>
+                          <button 
+                            onClick={() => handleApprove(student.id)}
+                            className="action-btn" 
+                            style={{ color: 'var(--accent-teal)', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleReject(student.id)}
+                            className="action-btn" 
+                            style={{ color: '#ff4d4d', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
                       <button className="action-btn"><Edit size={16} /></button>
                       <button className="action-btn delete"><Trash2 size={16} /></button>
-                      <button className="action-btn"><MoreVertical size={16} /></button>
                     </div>
                   </td>
                 </motion.tr>

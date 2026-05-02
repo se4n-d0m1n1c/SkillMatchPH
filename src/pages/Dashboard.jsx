@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, BookOpen, Target, Sparkles } from 'lucide-react';
+import { LogOut, GraduationCap, Target, User } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -42,8 +42,8 @@ const Dashboard = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
           {[
             { icon: <Target />, title: 'Career Assessment', desc: 'Take a quick test to find your ideal career paths.' },
-            { icon: <BookOpen />, title: 'Skill Roadmap', desc: 'See what skills you need for your dream job.' },
-            { icon: <Sparkles />, title: 'AI Recommendations', desc: 'Personalized suggestions based on your profile.' },
+            { icon: <GraduationCap />, title: 'Programs', desc: 'Explore general information about different college programs.' },
+            { icon: <User />, title: 'Profile', desc: 'View and manage your personal information and progress.' },
           ].map((card, i) => (
             <motion.div
               key={card.title}

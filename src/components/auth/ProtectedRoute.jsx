@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, role, loading } = useAuth();
+  const { user, role, status, loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,6 +14,16 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Redirect pending students
+  if (role === 'student' && status === 'pending' && window.location.pathname !== '/pending') {
+    return <Navigate to="/pending" replace />;
+  }
+
+  // Redirect rejected students
+  if (role === 'student' && status === 'rejected' && window.location.pathname !== '/rejected') {
+    return <Navigate to="/rejected" replace />;
   }
 
   if (adminOnly && role !== 'admin') {

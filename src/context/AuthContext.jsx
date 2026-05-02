@@ -7,6 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
+  const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
@@ -14,20 +15,23 @@ export const AuthProvider = ({ children }) => {
       console.log('Fetching profile for:', userId);
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, status')
         .eq('id', userId)
         .single();
       
       if (error) {
         console.error('Supabase error fetching profile:', error);
-        return 'student';
+        return { role: 'student', status: 'pending' };
       }
       
       console.log('Profile found:', data);
-      return data?.role || 'student';
+      return { 
+        role: data?.role || 'student', 
+        status: data?.status || 'pending' 
+      };
     } catch (err) {
       console.error('Unexpected error in fetchProfile:', err);
-      return 'student';
+      return { role: 'student', status: 'pending' };
     }
   };
 
@@ -41,8 +45,9 @@ export const AuthProvider = ({ children }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const userRole = await fetchProfile(session.user.id);
-          setRole(userRole);
+          const profile = await fetchProfile(session.user.id);
+          setRole(profile.role);
+          setStatus(profile.status);
         }
       } catch (error) {
         console.error('Error fetching session:', error.message);
@@ -56,10 +61,12 @@ export const AuthProvider = ({ children }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const userRole = await fetchProfile(session.user.id);
-        setRole(userRole);
+        const profile = await fetchProfile(session.user.id);
+        setRole(profile.role);
+        setStatus(profile.status);
       } else {
         setRole(null);
+        setStatus(null);
       }
       setLoading(false);
     });
@@ -98,6 +105,7 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     role,
+    status,
     loading,
   };
 
