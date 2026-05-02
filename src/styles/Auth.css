@@ -4,28 +4,44 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  box-sizing: border-box;
 }
 
 .auth-container {
   display: flex;
   width: 100%;
-  max-width: 1100px;
-  min-height: 700px;
+  max-width: 1150px;
+  min-height: 650px;
   background: rgba(255, 255, 255, 0.01);
   border-radius: 32px;
-  overflow: hidden;
   border: 1px solid var(--glass-border);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.auth-container.signup-mode {
+  max-width: 1350px;
+  min-height: 750px;
 }
 
 /* Branding Side */
 .branding-section {
-  flex: 1;
+  flex: 0.9;
   padding: 4rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   background: linear-gradient(135deg, rgba(112, 0, 255, 0.1) 0%, rgba(0, 245, 255, 0.05) 100%);
   position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signup-mode .branding-section {
+  flex: 0.55;
+  padding-left: 5rem;
 }
 
 .branding-content {
@@ -69,27 +85,37 @@
 
 /* Form Side */
 .form-section {
-  flex: 0.9;
+  flex: 1.1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4rem;
+  padding: 2rem;
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signup-mode .form-section {
+  flex: 1.45;
 }
 
 .form-wrapper {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signup-mode .form-wrapper {
+  max-width: 700px;
 }
 
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: blur(30px);
   border: 1px solid var(--glass-border);
-  border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .form-header {
@@ -124,7 +150,7 @@
   color: var(--text-secondary);
 }
 
-.input-group input {
+.input-group input, .input-group select {
   width: 100%;
   padding: 0.875rem 1rem 0.875rem 3rem;
   background: rgba(255, 255, 255, 0.05);
@@ -134,13 +160,38 @@
   font-family: inherit;
   font-size: 1rem;
   transition: all 0.3s ease;
+  appearance: none;
 }
 
-.input-group input:focus {
+.input-group input:focus, .input-group select:focus {
   outline: none;
   border-color: var(--accent-teal);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.1);
+}
+
+.custom-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+}
+
+.custom-select option {
+  background: #1a0f1e;
+  color: #fff;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.full-width {
+  grid-column: span 2;
 }
 
 .error-message {

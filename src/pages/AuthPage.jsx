@@ -8,7 +8,7 @@ const AuthPage = () => {
 
   return (
     <div className="auth-page">
-      <div className="auth-container">
+      <div className={`auth-container ${!isLogin ? 'signup-mode' : ''}`}>
         {/* Branding Side (Left) */}
         <div className="branding-section">
           <motion.div 

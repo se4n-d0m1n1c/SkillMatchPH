@@ -8,24 +8,22 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
   const [status, setStatus] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role, status')
+        .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (error) {
         return { role: 'student', status: 'pending' };
       }
-      
-      return { 
-        role: data?.role || 'student', 
-        status: data?.status || 'pending' 
-      };
+
+      return data;
     } catch (err) {
       return { role: 'student', status: 'pending' };
     }
@@ -39,11 +37,12 @@ export const AuthProvider = ({ children }) => {
         if (error) throw error;
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          setRole(profile.role);
-          setStatus(profile.status);
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+          setRole(profileData.role);
+          setStatus(profileData.status);
         }
       } catch (error) {
         console.error('Error fetching session:', error.message);
@@ -55,12 +54,14 @@ export const AuthProvider = ({ children }) => {
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setRole(profile.role);
-        setStatus(profile.status);
+        const profileData = await fetchProfile(session.user.id);
+        setProfile(profileData);
+        setRole(profileData.role);
+        setStatus(profileData.status);
       } else {
+        setProfile(null);
         setRole(null);
         setStatus(null);
       }
@@ -74,16 +75,35 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const signUp = (email, password, displayName) => {
-    return supabase.auth.signUp({
+  const signUp = async (email, password, profileData) => {
+    const metadata = {
+      first_name: profileData.firstName,
+      last_name: profileData.lastName,
+      student_no: profileData.studentNo,
+      grade_level: profileData.gradeLevel,
+      shs_track: profileData.shsTrack,
+      shs_strand: profileData.shsStrand,
+      status: 'pending',
+      role: 'student',
+    };
+
+    console.log('--- SIGNUP DEBUG ---');
+    console.log('Email:', email);
+    console.log('Mapped Metadata:', metadata);
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: displayName,
-        },
+        data: metadata,
       },
     });
+
+    if (error) {
+      console.error('SUPABASE ERROR:', error.message);
+    }
+    
+    return { data, error };
   };
 
   const signIn = (email, password) => {
@@ -96,7 +116,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setRole(null);
       setStatus(null);
-      
+
       await supabase.auth.signOut();
     } catch (error) {
       window.location.href = '/';
@@ -111,6 +131,7 @@ export const AuthProvider = ({ children }) => {
     session,
     role,
     status,
+    profile,
     loading,
   };
 

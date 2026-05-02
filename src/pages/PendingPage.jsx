@@ -14,20 +14,20 @@ const PendingPage = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2rem' }}
         >
-          <div style={{ 
-            width: '80px', 
-            height: '80px', 
-            background: 'rgba(251, 191, 36, 0.1)', 
-            borderRadius: '50%', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            width: '80px',
+            height: '80px',
+            background: 'rgba(251, 191, 36, 0.1)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto',
             color: '#fbbf24',
             position: 'relative'
           }}>
             <Clock size={40} />
-            <motion.div 
+            <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
               style={{ position: 'absolute', width: '100%', height: '100%', border: '2px dashed #fbbf24', borderRadius: '50%', opacity: 0.3 }}
@@ -37,7 +37,7 @@ const PendingPage = () => {
 
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Account Under Review</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
-          Hello, <strong style={{ color: '#fff' }}>{user?.user_metadata?.full_name || 'Student'}</strong>!<br />
+          Hello, <strong style={{ color: '#fff' }}>{user?.user_metadata?.first_name + ' ' + user?.user_metadata?.last_name || 'Student'}</strong>!<br />
           Your account is currently pending approval by our administrators. We want to ensure everyone on SkillMatchPH is a verified student.
         </p>
 
@@ -51,9 +51,9 @@ const PendingPage = () => {
           </div>
         </div>
 
-        <button 
-          onClick={() => signOut()} 
-          className="signout-btn" 
+        <button
+          onClick={() => signOut()}
+          className="signout-btn"
           style={{ width: '100%', justifyContent: 'center' }}
         >
           <LogOut size={20} />
