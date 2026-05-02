@@ -37,7 +37,11 @@ const PendingPage = () => {
 
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Account Under Review</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
-          Hello, <strong style={{ color: '#fff' }}>{user?.user_metadata?.first_name + ' ' + user?.user_metadata?.last_name || 'Student'}</strong>!<br />
+          Hello, <strong style={{ color: '#fff' }}>
+            {user?.user_metadata?.first_name 
+              ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
+              : 'Student'}
+          </strong>!<br />
           Your account is currently pending approval by our administrators. We want to ensure everyone on SkillMatchPH is a verified student.
         </p>
 

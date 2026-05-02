@@ -5,6 +5,11 @@ import { XCircle, LogOut, Mail } from 'lucide-react';
 const RejectedPage = () => {
   const { signOut, user } = useAuth();
 
+  // Bug fix: was using full_name — now uses split fields
+  const firstName = user?.user_metadata?.first_name;
+  const lastName = user?.user_metadata?.last_name;
+  const displayName = firstName ? `${firstName} ${lastName || ''}` : 'Student';
+
   return (
     <div className="auth-page">
       <div className="glass-card" style={{ maxWidth: '500px', textAlign: 'center', padding: '3rem' }}>
@@ -14,13 +19,13 @@ const RejectedPage = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2rem' }}
         >
-          <div style={{ 
-            width: '80px', 
-            height: '80px', 
-            background: 'rgba(255, 77, 77, 0.1)', 
-            borderRadius: '50%', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            width: '80px',
+            height: '80px',
+            background: 'rgba(255, 77, 77, 0.1)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto',
             color: '#ff4d4d'
@@ -31,7 +36,7 @@ const RejectedPage = () => {
 
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Account Rejected</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
-          Hello, <strong style={{ color: '#fff' }}>{user?.user_metadata?.full_name || 'Student'}</strong>.<br />
+          Hello, <strong style={{ color: '#fff' }}>{displayName}</strong>.<br />
           We regret to inform you that your account application has been declined.
         </p>
 
@@ -45,9 +50,9 @@ const RejectedPage = () => {
           </div>
         </div>
 
-        <button 
-          onClick={() => signOut()} 
-          className="signout-btn" 
+        <button
+          onClick={signOut}
+          className="signout-btn"
           style={{ width: '100%', justifyContent: 'center' }}
         >
           <LogOut size={20} />

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, role, status, loading } = useAuth();
 
-  if (loading) {
+  if (loading && !role) {
     return (
       <div className="loading-screen">
         <div className="loader"></div>

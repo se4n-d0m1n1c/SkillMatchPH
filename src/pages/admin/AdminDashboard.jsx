@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { Users, GraduationCap, TrendingUp, AlertCircle } from 'lucide-react';
 
+const ADMIN_STATS = [
+  { label: 'Total Students', value: '1,284', icon: <Users />, color: 'var(--accent-teal)' },
+  { label: 'Completed Assessments', value: '856', icon: <GraduationCap />, color: 'var(--accent-violet)' },
+  { label: 'Active Sessions', value: '42', icon: <TrendingUp />, color: '#4ade80' },
+  { label: 'Pending Reviews', value: '12', icon: <AlertCircle />, color: '#fbbf24' },
+];
+
 const AdminDashboard = () => {
-  const stats = [
-    { label: 'Total Students', value: '1,284', icon: <Users />, color: 'var(--accent-teal)' },
-    { label: 'Completed Assessments', value: '856', icon: <GraduationCap />, color: 'var(--accent-violet)' },
-    { label: 'Active Sessions', value: '42', icon: <TrendingUp />, color: '#4ade80' },
-    { label: 'Pending Reviews', value: '12', icon: <AlertCircle />, color: '#fbbf24' },
-  ];
 
   return (
     <div className="admin-dashboard">
@@ -17,7 +18,7 @@ const AdminDashboard = () => {
       </header>
 
       <div className="stats-grid">
-        {stats.map((stat, i) => (
+        {ADMIN_STATS.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}

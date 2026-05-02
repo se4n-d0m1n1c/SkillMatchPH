@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -12,63 +12,63 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-      if (error) {
+    if (error) {
+      // PGRST116 means no rows returned (profile not created yet by trigger)
+      if (error.code === 'PGRST116') {
         return { role: 'student', status: 'pending' };
       }
-
-      return data;
-    } catch (err) {
-      return { role: 'student', status: 'pending' };
+      throw error;
     }
+
+    return data;
   };
 
+  const roleRef = React.useRef(role);
   useEffect(() => {
-    // Check active sessions and sets the user
-    const setData = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        setSession(session);
-        setUser(session?.user ?? null);
+    roleRef.current = role;
+  }, [role]);
 
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
-          setRole(profileData.role);
-          setStatus(profileData.status);
-        }
-      } catch (error) {
-        console.error('Error fetching session:', error.message);
-      } finally {
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      if (event === 'TOKEN_REFRESHED') return;
+
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setRole(null);
+        setStatus(null);
         setLoading(false);
+        return;
       }
-    };
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-        setRole(profileData.role);
-        setStatus(profileData.status);
-      } else {
-        setProfile(null);
-        setRole(null);
-        setStatus(null);
+        // Use ref to avoid stale closure (role is always null in this closure otherwise)
+        if (!roleRef.current) {
+          setLoading(true);
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+            setRole(profileData.role);
+            setStatus(profileData.status);
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+          }
+        }
       }
+
       setLoading(false);
     });
-
-    setData();
 
     return () => {
       listener?.subscription.unsubscribe();
@@ -87,22 +87,16 @@ export const AuthProvider = ({ children }) => {
       role: 'student',
     };
 
-    console.log('--- SIGNUP DEBUG ---');
-    console.log('Email:', email);
-    console.log('Mapped Metadata:', metadata);
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: metadata,
-      },
+      options: { data: metadata },
     });
 
     if (error) {
-      console.error('SUPABASE ERROR:', error.message);
+      console.error('Signup error:', error.message);
     }
-    
+
     return { data, error };
   };
 
@@ -111,16 +105,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
-    try {
-      setSession(null);
-      setUser(null);
-      setRole(null);
-      setStatus(null);
-
-      await supabase.auth.signOut();
-    } catch (error) {
-      window.location.href = '/';
-    }
+    // State is cleared reactively via onAuthStateChange(SIGNED_OUT)
+    await supabase.auth.signOut();
   };
 
   const value = {
@@ -137,7 +123,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
