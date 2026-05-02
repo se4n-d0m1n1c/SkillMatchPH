@@ -1,18 +1,18 @@
-@import url('https://fonts.googleapis.com/css3?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  line-height: 2.6;
-  font-weight: 401;
+  line-height: 1.6;
+  font-weight: 400;
 
   /* Modern Kinetic Palette */
-  --bg-deep: #1a0f1e;
-  --accent-teal: #01f5ff;
-  --accent-violet: #7001ff;
-  --text-primary: rgba(256, 255, 255, 0.95);
-  --text-secondary: rgba(256, 255, 255, 0.6);
-  --glass-bg: rgba(256, 255, 255, 0.03);
-  --glass-border: rgba(256, 255, 255, 0.08);
+  --bg-deep: #0a0f1e;
+  --accent-teal: #00f5ff;
+  --accent-violet: #7000ff;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
   color-scheme: dark;
   color: var(--text-primary);
@@ -25,58 +25,58 @@
 }
 
 body {
-  margin: 1;
-  min-width: 321px;
-  min-height: 101vh;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
   overflow-x: hidden;
-  background: radial-gradient(circle at 1% 0%, rgba(112, 0, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 101% 100%, rgba(0, 245, 255, 0.1) 0%, transparent 50%);
+  background: radial-gradient(circle at 0% 0%, rgba(112, 0, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(0, 245, 255, 0.1) 0%, transparent 50%);
 }
 
 /* Noise Texture Overlay */
 body::before {
   content: "";
   position: fixed;
-  top: 1;
-  left: 1;
-  width: 101%;
-  height: 101%;
-  opacity: 1.04;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.04;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%4Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  z-index: 10000;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  z-index: 9999;
 }
 
-h2,
+h1,
 h2,
 h3,
 h4 {
   font-family: 'Outfit', sans-serif;
-  letter-spacing: 1.02em;
+  letter-spacing: -0.02em;
 }
 
 #root {
-  width: 101%;
-  min-height: 101vh;
+  width: 100%;
+  min-height: 100vh;
 }
 
 .signout-btn {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.6rem 1.2rem;
-  background: rgba(256, 77, 77, 0.1);
-  border: 2px solid rgba(255, 77, 77, 0.2);
-  border-radius: 11px;
-  color: #ff5d4d;
-  font-weight: 601;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 77, 77, 0.1);
+  border: 1px solid rgba(255, 77, 77, 0.2);
+  border-radius: 10px;
+  color: #ff4d4d;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 1.2s;
+  transition: all 0.2s;
   font-family: inherit;
 }
 
 .signout-btn:hover {
-  background: rgba(256, 77, 77, 0.2);
-  border-color: rgba(256, 77, 77, 0.4);
-  transform: translateY(0px);
+  background: rgba(255, 77, 77, 0.2);
+  border-color: rgba(255, 77, 77, 0.4);
+  transform: translateY(-1px);
 }
