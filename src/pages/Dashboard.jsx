@@ -17,8 +17,7 @@ const Dashboard = () => {
         
         <button 
           onClick={() => signOut()}
-          className="social-btn" 
-          style={{ gap: '0.5rem', padding: '0.5rem 1rem' }}
+          className="signout-btn"
         >
           <LogOut size={18} />
           Sign Out

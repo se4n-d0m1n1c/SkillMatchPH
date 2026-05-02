@@ -6,7 +6,30 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId) => {
+    try {
+      console.log('Fetching profile for:', userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Supabase error fetching profile:', error);
+        return 'student';
+      }
+      
+      console.log('Profile found:', data);
+      return data?.role || 'student';
+    } catch (err) {
+      console.error('Unexpected error in fetchProfile:', err);
+      return 'student';
+    }
+  };
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -16,6 +39,11 @@ export const AuthProvider = ({ children }) => {
         if (error) throw error;
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const userRole = await fetchProfile(session.user.id);
+          setRole(userRole);
+        }
       } catch (error) {
         console.error('Error fetching session:', error.message);
       } finally {
@@ -23,9 +51,16 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const userRole = await fetchProfile(session.user.id);
+        setRole(userRole);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
 
@@ -62,6 +97,7 @@ export const AuthProvider = ({ children }) => {
     signOut,
     user,
     session,
+    role,
     loading,
   };
 

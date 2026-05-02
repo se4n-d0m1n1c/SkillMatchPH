@@ -56,3 +56,24 @@ h1, h2, h3, h4 {
   width: 100%;
   min-height: 100vh;
 }
+
+.signout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 77, 77, 0.1);
+  border: 1px solid rgba(255, 77, 77, 0.2);
+  border-radius: 10px;
+  color: #ff4d4d;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.signout-btn:hover {
+  background: rgba(255, 77, 77, 0.2);
+  border-color: rgba(255, 77, 77, 0.4);
+  transform: translateY(-1px);
+}
