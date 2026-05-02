@@ -12,7 +12,6 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (userId) => {
     try {
-      console.log('Fetching profile for:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('role, status')
@@ -20,17 +19,14 @@ export const AuthProvider = ({ children }) => {
         .single();
       
       if (error) {
-        console.error('Supabase error fetching profile:', error);
         return { role: 'student', status: 'pending' };
       }
       
-      console.log('Profile found:', data);
       return { 
         role: data?.role || 'student', 
         status: data?.status || 'pending' 
       };
     } catch (err) {
-      console.error('Unexpected error in fetchProfile:', err);
       return { role: 'student', status: 'pending' };
     }
   };
@@ -94,8 +90,17 @@ export const AuthProvider = ({ children }) => {
     return supabase.auth.signInWithPassword({ email, password });
   };
 
-  const signOut = () => {
-    return supabase.auth.signOut();
+  const signOut = async () => {
+    try {
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      setStatus(null);
+      
+      await supabase.auth.signOut();
+    } catch (error) {
+      window.location.href = '/';
+    }
   };
 
   const value = {

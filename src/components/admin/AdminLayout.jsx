@@ -35,7 +35,9 @@ const AdminLayout = ({ children }) => {
 
         <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
           <button 
-            onClick={() => signOut()} 
+            onClick={async () => {
+              await signOut();
+            }} 
             className="signout-btn" 
             style={{ width: '100%', justifyContent: 'center' }}
           >
