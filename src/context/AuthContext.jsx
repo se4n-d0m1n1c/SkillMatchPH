@@ -11,11 +11,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check active sessions and sets the user
     const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Error fetching session:', error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
