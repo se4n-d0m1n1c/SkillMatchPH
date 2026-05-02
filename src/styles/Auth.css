@@ -199,52 +199,18 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.divider {
-  margin: 2rem 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.divider::before, .divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--glass-border);
-}
-
-.social-login {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.social-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.social-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
 
 .toggle-auth {
+  margin-top: 2rem;
   text-align: center;
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -277,7 +243,7 @@
     border-radius: 20px;
     min-height: auto;
   }
-  
+
   .branding-section {
     padding: 2.5rem 1.5rem;
     text-align: center;
@@ -290,7 +256,7 @@
     align-items: center;
     width: 100%;
   }
-  
+
   .logo-wrapper {
     margin-bottom: 1rem;
   }
@@ -312,11 +278,11 @@
     font-size: 1rem;
     margin: 0 auto 1.5rem auto;
   }
-  
+
   .form-section {
     padding: 2rem 1.5rem;
   }
-  
+
   .glass-card {
     padding: 2rem 1.5rem;
     border-radius: 16px;

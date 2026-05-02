@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Layout, Globe, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const AuthForm = ({ isLogin, toggleForm }) => {
@@ -71,33 +71,33 @@ const AuthForm = ({ isLogin, toggleForm }) => {
         {!isLogin && (
           <div className="input-group">
             <User className="input-icon" size={18} />
-            <input 
-              type="text" 
-              placeholder="Full Name" 
-              required 
+            <input
+              type="text"
+              placeholder="Full Name"
+              required
               value={formData.fullName}
-              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
             />
           </div>
         )}
         <div className="input-group">
           <Mail className="input-icon" size={18} />
-          <input 
-            type="email" 
-            placeholder="Email Address" 
-            required 
+          <input
+            type="email"
+            placeholder="Email Address"
+            required
             value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
         </div>
         <div className="input-group">
           <Lock className="input-icon" size={18} />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            required 
+          <input
+            type="password"
+            placeholder="Password"
+            required
             value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
         </div>
 
@@ -118,22 +118,6 @@ const AuthForm = ({ isLogin, toggleForm }) => {
           )}
         </button>
       </form>
-
-      <div className="divider">
-        <span>Or continue with</span>
-      </div>
-
-      <div className="social-login">
-        <button className="social-btn">
-          <Globe size={20} />
-          <span>Google</span>
-        </button>
-        <button className="social-btn">
-          <Layout size={20} />
-          <span>GitHub</span>
-        </button>
-      </div>
-
       <div className="toggle-auth">
         {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
         <button onClick={toggleForm} className="toggle-link" disabled={loading}>
