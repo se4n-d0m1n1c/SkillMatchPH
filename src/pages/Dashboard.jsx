@@ -21,6 +21,8 @@ const Dashboard = () => {
   const handleCardClick = (title) => {
     if (title === 'Profile') {
       navigate('/dashboard/profile');
+    } else if (title === 'Programs') {
+      navigate('/dashboard/programs');
     }
   };
 
@@ -34,7 +36,7 @@ const Dashboard = () => {
           transition={{ delay: 0.2 }}
           style={{ marginBottom: '4rem' }}
         >
-          <h2 style={{ fontSize: '3rem', fontWeight: 700, marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 700, marginBottom: '1rem', wordBreak: 'break-word' }}>
             Hello, <span style={{ color: 'var(--accent-teal)' }}>{displayName}</span>!
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.25rem' }}>
@@ -42,7 +44,7 @@ const Dashboard = () => {
           </p>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
           {DASHBOARD_CARDS.map((card, i) => (
             <motion.div
               key={card.title}

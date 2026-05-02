@@ -2,26 +2,37 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked } from 'lucide-react';
 
+// 1. Hoist static animation variants to module scope to prevent recreation on re-render (rendering-hoist-jsx)
+const CONTAINER_VARIANTS = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
+// 2. Hoist static mapping configuration for rendering to reduce JSX bloat inside the component (rendering-hoist-jsx)
+const PROFILE_FIELDS = [
+  { id: 'email', icon: <Mail size={20} />, label: 'Email Address', getValue: (user, _) => user?.email, isEmail: true },
+  { id: 'studentNo', icon: <Fingerprint size={20} />, label: 'Student Number', getValue: (_, profile) => profile?.student_no },
+  { id: 'grade', icon: <GraduationCap size={20} />, label: 'Grade Level', getValue: (_, profile) => profile?.grade_level ? `Grade ${profile.grade_level}` : null },
+  { id: 'track', icon: <BookOpen size={20} />, label: 'SHS Track', getValue: (_, profile) => profile?.shs_track },
+  { id: 'strand', icon: <BookMarked size={20} />, label: 'SHS Strand', getValue: (_, profile) => profile?.shs_strand },
+  { id: 'status', icon: <Activity size={20} />, label: 'Account Status', getValue: (_, profile) => profile?.status, isStatus: true },
+];
+
 const StudentProfile = () => {
   const { user, profile } = useAuth();
 
-  // Combine names safely using inline derivation (rerender-derived-state-no-effect)
+  // 3. Combine names safely using inline derivation, avoiding unnecessary useEffect (rerender-derived-state-no-effect)
   const firstName = user?.user_metadata?.first_name || '';
   const lastName = user?.user_metadata?.last_name || '';
   const fullName = `${firstName} ${lastName}`.trim() || 'Student';
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
 
   return (
     <div style={{ padding: '2rem 0' }}>
@@ -34,10 +45,10 @@ const StudentProfile = () => {
         <p style={{ color: 'var(--text-secondary)' }}>View your personal information and academic details.</p>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem', alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
         
         {/* Profile Identity Card */}
-        <motion.div className="glass-card" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+        <motion.div className="glass-card" style={{ flex: '1 1 300px' }} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '2rem 0' }}>
             <div style={{
               width: '120px',
@@ -72,7 +83,8 @@ const StudentProfile = () => {
         {/* Details Grid */}
         <motion.div 
           className="glass-card" 
-          variants={containerVariants} 
+          style={{ flex: '2 1 400px' }}
+          variants={CONTAINER_VARIANTS} 
           initial="hidden" 
           animate="show"
         >
@@ -80,75 +92,38 @@ const StudentProfile = () => {
             Academic Information
           </h4>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-            
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <Mail size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Email Address</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>{user?.email || 'N/A'}</p>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <Fingerprint size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Student Number</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>{profile?.student_no || 'N/A'}</p>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <GraduationCap size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Grade Level</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>{profile?.grade_level ? `Grade ${profile.grade_level}` : 'N/A'}</p>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <BookOpen size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>SHS Track</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>{profile?.shs_track || 'N/A'}</p>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <BookMarked size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>SHS Strand</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>{profile?.shs_strand || 'N/A'}</p>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
-                <Activity size={20} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Account Status</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500, textTransform: 'capitalize' }}>
-                  <span style={{
-                    color: profile?.status === 'approved' ? '#4ade80' : 
-                           profile?.status === 'rejected' ? '#ff4d4d' : '#fbbf24'
-                  }}>
-                    {profile?.status || 'Unknown'}
-                  </span>
-                </p>
-              </div>
-            </motion.div>
-
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+            {PROFILE_FIELDS.map((field) => {
+              const value = field.getValue(user, profile);
+              return (
+                <motion.div key={field.id} variants={ITEM_VARIANTS} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
+                    {field.icon}
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{field.label}</p>
+                    {field.isStatus ? (
+                      <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500, textTransform: 'capitalize' }}>
+                        <span style={{
+                          color: value === 'approved' ? '#4ade80' : 
+                                 value === 'rejected' ? '#ff4d4d' : '#fbbf24'
+                        }}>
+                          {value || 'Unknown'}
+                        </span>
+                      </p>
+                    ) : (
+                      <p style={{ 
+                        margin: '0.25rem 0 0 0', 
+                        fontWeight: 500, 
+                        wordBreak: field.isEmail ? 'break-all' : 'normal' 
+                      }}>
+                        {value || 'N/A'}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </div>
