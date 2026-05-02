@@ -10,6 +10,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 import StudentLayout from './components/student/StudentLayout'
 import StudentProfile from './pages/student/StudentProfile'
+import Programs from './pages/student/Programs'
 import './App.css'
 
 function App() {
@@ -47,6 +48,14 @@ function App() {
           <ProtectedRoute>
             <StudentLayout>
               <Dashboard />
+            </StudentLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/programs" element={
+          <ProtectedRoute>
+            <StudentLayout>
+              <Programs />
             </StudentLayout>
           </ProtectedRoute>
         } />
