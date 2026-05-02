@@ -8,7 +8,7 @@ const AuthPage = () => {
 
   return (
     <div className="auth-page">
-      <div className="auth-container">
+      <div className={`auth-container ${!isLogin ? 'signup-mode' : ''}`}>
         {/* Branding Side (Left) */}
         <div className="branding-section">
           <motion.div 
@@ -51,12 +51,7 @@ const AuthPage = () => {
 
         {/* Form Side (Right) */}
         <div className="form-section">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="form-wrapper"
-          >
+          <div className="form-wrapper">
             <AnimatePresence mode="wait">
               <AuthForm 
                 key={isLogin ? 'login' : 'register'}
@@ -64,7 +59,7 @@ const AuthPage = () => {
                 toggleForm={() => setIsLogin(!isLogin)} 
               />
             </AnimatePresence>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

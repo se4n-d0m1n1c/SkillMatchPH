@@ -1,19 +1,47 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+// Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
+const STRANDS_MAP = {
+  'Academic': ['STEM', 'ABM', 'HUMSS', 'GAS'],
+  'Technical-Vocational-Livelihood (TVL)': ['ICT', 'HE', 'IA', 'Agri-Fishery'],
+};
+
+const INITIAL_FORM = {
+  email: '',
+  password: '',
+  firstName: '',
+  lastName: '',
+  studentNo: '',
+  gradeLevel: '11',
+  shsTrack: 'Academic',
+  shsStrand: 'STEM',
+};
 
 const AuthForm = ({ isLogin, toggleForm }) => {
   const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [formData, setFormData] = useState(INITIAL_FORM);
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    fullName: '',
-  });
+  // Derived state — no useEffect needed (rerender-derived-state-no-effect)
+  const availableStrands = STRANDS_MAP[formData.shsTrack];
+
+  // Use functional setState to avoid stale closures (rerender-functional-setstate)
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      // When track changes, reset strand to first available (derived, no effect needed)
+      if (field === 'shsTrack') {
+        next.shsStrand = STRANDS_MAP[value][0];
+      }
+      return next;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +53,14 @@ const AuthForm = ({ isLogin, toggleForm }) => {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
       } else {
-        const { error } = await signUp(formData.email, formData.password, formData.fullName);
+        const { error } = await signUp(formData.email, formData.password, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          studentNo: formData.studentNo,
+          gradeLevel: formData.gradeLevel,
+          shsTrack: formData.shsTrack,
+          shsStrand: formData.shsStrand,
+        });
         if (error) throw error;
         setSuccess(true);
       }
@@ -42,6 +77,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="glass-card success-card"
+        style={{ maxWidth: '400px', margin: '0 auto' }}
       >
         <div className="form-header">
           <h3>Check your email</h3>
@@ -60,7 +96,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.4 }}
-      className="glass-card"
+      className={`glass-card ${!isLogin ? 'signup-wide' : ''}`}
     >
       <div className="form-header">
         <h3>{isLogin ? 'Welcome Back' : 'Create Account'}</h3>
@@ -68,48 +104,71 @@ const AuthForm = ({ isLogin, toggleForm }) => {
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
-        {!isLogin && (
-          <div className="input-group">
-            <User className="input-icon" size={18} />
-            <input
-              type="text"
-              placeholder="Full Name"
-              required
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            />
-          </div>
-        )}
-        <div className="input-group">
+        <AnimatePresence mode='wait'>
+          {!isLogin ? (
+            <motion.div
+              key="signup-fields"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="form-grid"
+            >
+              <div className="input-group">
+                <User className="input-icon" size={18} />
+                <input type="text" placeholder="First Name" required value={formData.firstName} onChange={handleChange('firstName')} />
+              </div>
+              <div className="input-group">
+                <User className="input-icon" size={18} />
+                <input type="text" placeholder="Last Name" required value={formData.lastName} onChange={handleChange('lastName')} />
+              </div>
+              <div className="input-group">
+                <Hash className="input-icon" size={18} />
+                <input type="text" placeholder="Student No." required value={formData.studentNo} onChange={handleChange('studentNo')} />
+              </div>
+              <div className="input-group">
+                <GraduationCap className="input-icon" size={18} />
+                <select required value={formData.gradeLevel} onChange={handleChange('gradeLevel')} className="custom-select">
+                  <option value="11">Grade 11</option>
+                  <option value="12">Grade 12</option>
+                </select>
+              </div>
+              <div className="input-group">
+                <Briefcase className="input-icon" size={18} />
+                <select required value={formData.shsTrack} onChange={handleChange('shsTrack')} className="custom-select">
+                  <option value="Academic">Academic Track</option>
+                  <option value="Technical-Vocational-Livelihood (TVL)">TVL Track</option>
+                </select>
+              </div>
+              <div className="input-group">
+                <GraduationCap className="input-icon" size={18} />
+                <select required value={formData.shsStrand} onChange={handleChange('shsStrand')} className="custom-select">
+                  {availableStrands.map(strand => (
+                    <option key={strand} value={strand}>{strand}</option>
+                  ))}
+                </select>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <div className={`input-group ${!isLogin ? 'full-width' : ''}`}>
           <Mail className="input-icon" size={18} />
-          <input
-            type="email"
-            placeholder="Email Address"
-            required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
+          <input type="email" placeholder="Email Address" required value={formData.email} onChange={handleChange('email')} />
         </div>
-        <div className="input-group">
+        <div className={`input-group ${!isLogin ? 'full-width' : ''}`}>
           <Lock className="input-icon" size={18} />
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          />
+          <input type="password" placeholder="Password" required value={formData.password} onChange={handleChange('password')} />
         </div>
 
-        {error && <p className="error-message">{error}</p>}
+        {error ? <p className="error-message full-width">{error}</p> : null}
 
-        {isLogin && (
+        {isLogin ? (
           <div className="form-footer">
             <a href="#" className="forgot-password">Forgot Password?</a>
           </div>
-        )}
+        ) : null}
 
-        <button type="submit" className="submit-btn" disabled={loading}>
+        <button type="submit" className="submit-btn full-width" disabled={loading}>
           {loading ? <Loader2 className="animate-spin" size={18} /> : (
             <>
               {isLogin ? 'Log In' : 'Sign Up'}
