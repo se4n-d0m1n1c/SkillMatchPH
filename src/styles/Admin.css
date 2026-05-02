@@ -1,5 +1,4 @@
 .admin-layout {
-  display: flex;
   min-height: 100vh;
   background-color: var(--bg-deep);
 }
@@ -21,10 +20,10 @@
 }
 
 .admin-main {
-  flex: 1;
   margin-left: 280px;
-  padding: 2rem 4rem;
+  padding: 2rem;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .nav-links {
@@ -121,4 +120,26 @@
 
 .action-btn.delete:hover {
   color: #ff4d4d;
+}
+
+/* ── Edit Modal ─────────────────────────────────────────── */
+
+/* Input & select focus state inside the edit modal */
+[id^="edit-"]:focus {
+  outline: none;
+  border-color: rgba(0, 242, 254, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.1);
+}
+
+/* Subtle scrollbar for tall modals */
+[role="dialog"]::-webkit-scrollbar { width: 4px; }
+[role="dialog"]::-webkit-scrollbar-track { background: transparent; }
+[role="dialog"]::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+/* Spinning loader icon */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
