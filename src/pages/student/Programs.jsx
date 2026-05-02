@@ -1,22 +1,58 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope } from 'lucide-react';
+import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope, Loader2, Server, Cpu, Bot, Pill, Activity, Radiation, TestTube, Wrench, Zap, Radio, Factory, FlaskConical, Calculator, Coins, Megaphone, Lightbulb, Utensils, GraduationCap, BookOpen, Dna, Palette } from 'lucide-react';
+import useSWR from 'swr';
+import { supabase } from '../../lib/supabase';
 
 // 1. Hoist static data outside component to avoid recreation (rendering-hoist-jsx)
-const CATEGORIES = ['All', 'Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences'];
+const CATEGORIES = ['All', 'Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
 
-const PROGRAMS_DATA = [
-  { id: 1, title: 'BS Computer Science', category: 'Technology', icon: <Code size={24} />, desc: 'Focuses on computing theory, algorithms, and software design.' },
-  { id: 2, title: 'BS Information Technology', category: 'Technology', icon: <BrainCircuit size={24} />, desc: 'Application of tech to solve business problems, networking, and systems.' },
-  { id: 3, title: 'BS Accountancy', category: 'Business', icon: <Briefcase size={24} />, desc: 'Deep dive into financial accounting, auditing, and taxation laws.' },
-  { id: 4, title: 'BS Business Administration', category: 'Business', icon: <Building size={24} />, desc: 'Core management, marketing, and business operations principles.' },
-  { id: 5, title: 'BS Civil Engineering', category: 'Engineering', icon: <HardHat size={24} />, desc: 'Design, construction, and maintenance of the physical and naturally built environment.' },
-  { id: 6, title: 'BS Nursing', category: 'Health', icon: <Stethoscope size={24} />, desc: 'Clinical skills, patient care, and healthcare management.' },
-  { id: 7, title: 'BS Medical Technology', category: 'Health', icon: <Microscope size={24} />, desc: 'Laboratory diagnostics and biological sciences.' },
-  { id: 8, title: 'BA Communication', category: 'Arts & Humanities', icon: <PenTool size={24} />, desc: 'Media studies, broadcasting, journalism, and public relations.' },
-  { id: 9, title: 'BS Psychology', category: 'Sciences', icon: <HeartHandshake size={24} />, desc: 'Scientific study of human behavior, mind, and mental processes.' },
-  { id: 10, title: 'BA Political Science', category: 'Arts & Humanities', icon: <Scale size={24} />, desc: 'Study of systems of governance, political behavior, and law.' }
-];
+// 2. Map string identifiers from the database to actual React components
+const ICON_MAP = {
+  Code: <Code size={24} />,
+  BrainCircuit: <BrainCircuit size={24} />,
+  Briefcase: <Briefcase size={24} />,
+  Building: <Building size={24} />,
+  HardHat: <HardHat size={24} />,
+  Stethoscope: <Stethoscope size={24} />,
+  Microscope: <Microscope size={24} />,
+  PenTool: <PenTool size={24} />,
+  HeartHandshake: <HeartHandshake size={24} />,
+  Scale: <Scale size={24} />,
+  Server: <Server size={24} />,
+  Cpu: <Cpu size={24} />,
+  Bot: <Bot size={24} />,
+  Pill: <Pill size={24} />,
+  Activity: <Activity size={24} />,
+  Radiation: <Radiation size={24} />,
+  TestTube: <TestTube size={24} />,
+  Wrench: <Wrench size={24} />,
+  Zap: <Zap size={24} />,
+  Radio: <Radio size={24} />,
+  Factory: <Factory size={24} />,
+  FlaskConical: <FlaskConical size={24} />,
+  Calculator: <Calculator size={24} />,
+  Coins: <Coins size={24} />,
+  Megaphone: <Megaphone size={24} />,
+  Lightbulb: <Lightbulb size={24} />,
+  Utensils: <Utensils size={24} />,
+  GraduationCap: <GraduationCap size={24} />,
+  BookOpen: <BookOpen size={24} />,
+  Dna: <Dna size={24} />,
+  Palette: <Palette size={24} />,
+};
+
+// 3. Define the SWR fetcher outside the component to keep references stable
+const fetchPrograms = async () => {
+  const { data, error } = await supabase
+    .from('programs')
+    .select('*')
+    .order('category')
+    .order('title');
+    
+  if (error) throw error;
+  return data;
+};
 
 const CONTAINER_VARIANTS = {
   hidden: { opacity: 0 },
@@ -35,15 +71,30 @@ const Programs = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  // 2. Use useMemo for expensive filtering (rerender-memo)
+  // 4. Client-side deduplication and caching using SWR (client-swr-dedup)
+  const { data: programs, error, isLoading } = useSWR('programs_list', fetchPrograms, {
+    revalidateOnFocus: false, // Prevents unnecessary refetches on tab switch
+  });
+
+  // 5. Use useMemo for expensive filtering (rerender-memo)
   const filteredPrograms = useMemo(() => {
-    return PROGRAMS_DATA.filter(program => {
-      const matchesSearch = program.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            program.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!programs) return [];
+    
+    // js-hoist-regexp: Hoist toLowerCase outside the loop to prevent recalculating N times
+    const searchLower = searchQuery.toLowerCase();
+    
+    return programs.filter(program => {
+      // js-early-exit: Check cheap category condition first
       const matchesCategory = activeCategory === 'All' || program.category === activeCategory;
-      return matchesSearch && matchesCategory;
+      if (!matchesCategory) return false;
+      
+      // js-early-exit: If no search query, skip expensive string matching
+      if (!searchLower) return true;
+
+      return program.title.toLowerCase().includes(searchLower) || 
+             program.description.toLowerCase().includes(searchLower);
     });
-  }, [searchQuery, activeCategory]);
+  }, [searchQuery, activeCategory, programs]);
 
   return (
     <div style={{ padding: '2rem 0' }}>
@@ -118,7 +169,28 @@ const Programs = () => {
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}
       >
         <AnimatePresence mode="popLayout">
-          {filteredPrograms.length > 0 ? (
+          {isLoading ? (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}
+            >
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }}>
+                <Loader2 size={48} color="var(--accent-teal)" />
+              </motion.div>
+              <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>Loading programs...</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0' }}
+            >
+              <p style={{ color: '#ff4d4d', fontSize: '1.2rem' }}>Failed to load programs. Please try again.</p>
+            </motion.div>
+          ) : filteredPrograms.length > 0 ? (
             filteredPrograms.map((program) => (
               <motion.div
                 key={program.id}
@@ -138,7 +210,7 @@ const Programs = () => {
                     background: 'rgba(0, 242, 254, 0.1)',
                     color: 'var(--accent-teal)'
                   }}>
-                    {program.icon}
+                    {ICON_MAP[program.icon_name] || <Code size={24} />}
                   </div>
                   <span style={{ 
                     fontSize: '0.75rem', 
@@ -156,32 +228,26 @@ const Programs = () => {
                     {program.title}
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
-                    {program.desc}
+                    {program.description}
                   </p>
                 </div>
                 
                 <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
-                  <button style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--accent-violet)',
-                    background: 'transparent',
-                    color: 'var(--text-primary)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'var(--accent-violet)';
-                    e.currentTarget.style.color = '#fff';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-primary)';
-                  }}
+                  <motion.button 
+                    whileHover={{ backgroundColor: 'var(--accent-violet)', color: '#fff' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--accent-violet)',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease, color 0.2s ease',
+                    }}
                   >
                     View Details
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             ))
