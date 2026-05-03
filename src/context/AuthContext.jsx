@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
       if (event === 'TOKEN_REFRESHED') return;
 
       if (event === 'SIGNED_OUT') {
