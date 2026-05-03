@@ -8,12 +8,12 @@ import { useAuth } from '../../context/AuthContext';
 // Hoisted outside the component so they are never recreated on re-render.
 
 const EDIT_FIELDS = [
-  { key: 'first_name',  label: 'First Name',     type: 'text'   },
-  { key: 'last_name',   label: 'Last Name',      type: 'text'   },
-  { key: 'student_no',  label: 'Student No.',    type: 'text'   },
-  { key: 'grade_level', label: 'Grade Level',    type: 'number' },
-  { key: 'shs_track',   label: 'SHS Track',      type: 'text'   },
-  { key: 'shs_strand',  label: 'SHS Strand',     type: 'text'   },
+  { key: 'first_name', label: 'First Name', type: 'text' },
+  { key: 'last_name', label: 'Last Name', type: 'text' },
+  { key: 'student_no', label: 'Student No.', type: 'text' },
+  { key: 'grade_level', label: 'Grade Level', type: 'number' },
+  { key: 'shs_track', label: 'SHS Track', type: 'text' },
+  { key: 'shs_strand', label: 'SHS Strand', type: 'text' },
   {
     key: 'status',
     label: 'Status',
@@ -47,8 +47,8 @@ const EditModal = ({ student, onClose, onSave }) => {
     }, {})
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState(null);
-  const firstInputRef       = useRef(null);
+  const [error, setError] = useState(null);
+  const firstInputRef = useRef(null);
 
   // Focus the first field when the modal opens.
   useEffect(() => { firstInputRef.current?.focus(); }, []);
@@ -89,8 +89,8 @@ const EditModal = ({ student, onClose, onSave }) => {
     <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Edit student">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{   opacity: 0, scale: 0.95, y: 20  }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -225,8 +225,8 @@ const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) =>
     <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{   opacity: 0, scale: 0.95, y: 20  }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -239,13 +239,13 @@ const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) =>
           textAlign: 'center'
         }}
       >
-        <div style={{ 
-          width: '60px', 
-          height: '60px', 
-          borderRadius: '50%', 
-          background: 'rgba(255, 77, 77, 0.1)', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          background: 'rgba(255, 77, 77, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 1.5rem',
           color: '#ff4d4d'
@@ -255,15 +255,15 @@ const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) =>
 
         <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem' }}>Delete Student?</h2>
         <p style={{ margin: '0 0 2rem', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Are you sure you want to delete <strong>{student.first_name} {student.last_name}</strong>? 
+          Are you sure you want to delete <strong>{student.first_name} {student.last_name}</strong>?
           This action cannot be undone.
         </p>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="action-btn" 
+          <button
+            type="button"
+            onClick={onClose}
+            className="action-btn"
             disabled={isDeleting}
             style={{ flex: 1, padding: '0.75rem', fontSize: '0.9rem' }}
           >
@@ -322,7 +322,7 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
         style={{
           paddingLeft: '3.2rem',
           paddingRight: '3rem',
-          width: '100%',
+          width: '68%',
           height: '46px',
           cursor: 'text',
           background: 'rgba(255, 255, 255, 0.03)',
@@ -402,12 +402,12 @@ const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEd
     borderRadius: '20px',
     background:
       status === 'approved' ? 'rgba(74, 222, 128, 0.1)' :
-      status === 'rejected' ? 'rgba(255, 77, 77, 0.1)'  :
-                              'rgba(251, 191, 36, 0.1)',
+        status === 'rejected' ? 'rgba(255, 77, 77, 0.1)' :
+          'rgba(251, 191, 36, 0.1)',
     color:
       status === 'approved' ? '#4ade80' :
-      status === 'rejected' ? '#ff4d4d' :
-                              '#fbbf24',
+        status === 'rejected' ? '#ff4d4d' :
+          '#fbbf24',
     fontSize: '0.75rem',
     fontWeight: 600,
     textTransform: 'capitalize',
@@ -494,8 +494,8 @@ const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEd
                   >
                     <Edit size={16} />
                   </button>
-                  <button 
-                    className="action-btn delete" 
+                  <button
+                    className="action-btn delete"
                     title="Delete student"
                     onClick={() => onDelete(student)}
                     aria-label={`Delete ${student.first_name ?? 'student'}`}
@@ -525,9 +525,9 @@ const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEd
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const StudentManagement = () => {
-  const [students,   setStudents]   = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm); // Keep input responsive (rerender-use-deferred-value)
   const [editTarget, setEditTarget] = useState(null); // student being edited
@@ -617,8 +617,8 @@ const StudentManagement = () => {
     setIsDeleting(true);
     try {
       // Call the RPC function to delete both Auth and Profile
-      const { error } = await supabase.rpc('delete_student', { 
-        target_user_id: deleteTarget.id 
+      const { error } = await supabase.rpc('delete_student', {
+        target_user_id: deleteTarget.id
       });
 
       if (error) throw error;
@@ -640,31 +640,31 @@ const StudentManagement = () => {
   const filteredStudents = students.filter((student) => {
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.toLowerCase();
     // Search both name and ID
-    return fullName.includes(deferredSearchTerm.toLowerCase()) || 
-           student.id.toLowerCase().includes(deferredSearchTerm.toLowerCase());
+    return fullName.includes(deferredSearchTerm.toLowerCase()) ||
+      student.id.toLowerCase().includes(deferredSearchTerm.toLowerCase());
   });
 
 
   return (
     <>
       <div className="student-management">
-        <header style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '3rem', 
+        <header style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '3rem',
           gap: '2rem',
           width: '100%',
           boxSizing: 'border-box'
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{ 
-              fontSize: '2.8rem', 
+            <h1 style={{
+              fontSize: '2.8rem',
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              marginBottom: '0.5rem', 
-              whiteSpace: 'nowrap', 
-              overflow: 'hidden', 
+              marginBottom: '0.5rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
               textOverflow: 'ellipsis',
               background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
               WebkitBackgroundClip: 'text',
@@ -685,8 +685,8 @@ const StudentManagement = () => {
             >
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
-            
-            <SearchBar 
+
+            <SearchBar
               value={searchTerm}
               onChange={setSearchTerm}
               inputRef={searchInputRef}
@@ -702,7 +702,7 @@ const StudentManagement = () => {
           overflow: 'hidden',
           backdropFilter: 'blur(10px)'
         }}>
-          <StudentTable 
+          <StudentTable
             students={filteredStudents}
             loading={loading}
             error={error}

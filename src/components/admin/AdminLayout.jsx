@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Building, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Admin.css';
 
@@ -10,6 +10,7 @@ const AdminLayout = ({ children }) => {
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/admin' },
     { icon: <Users size={20} />, label: 'Students', path: '/admin/students' },
+    { icon: <Building size={20} />, label: 'Universities', path: '/admin/universities' },
     { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
   ];
 

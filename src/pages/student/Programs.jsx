@@ -108,6 +108,7 @@ const ProgramDetailsModal = ({ program, onClose }) => {
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           style={{
             position: 'absolute', top: '1.5rem', right: '1.5rem',
             background: 'none', border: 'none', color: 'var(--text-secondary)',
@@ -247,10 +248,12 @@ const Programs = () => {
         <div style={{ position: 'relative', maxWidth: '600px' }}>
           <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
           <input 
+            id="program-search"
             type="text" 
             placeholder="Search programs..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search programs"
             style={{
               width: '100%',
               padding: '1rem 1rem 1rem 3rem',
@@ -364,6 +367,7 @@ const Programs = () => {
                   <motion.button 
                     onClick={() => setSelectedProgram(program)}
                     whileHover={{ backgroundColor: 'var(--accent-violet)', color: '#fff' }}
+                    aria-label={`View details for ${program.title}`}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
