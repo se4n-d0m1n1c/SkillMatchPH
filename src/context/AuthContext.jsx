@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
   };
 
-  const value = {
+  const value = React.useMemo(() => ({
     signUp,
     signIn,
     signOut,
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     status,
     profile,
     loading,
-  };
+  }), [user, session, role, status, profile, loading]);
 
   return (
     <AuthContext.Provider value={value}>

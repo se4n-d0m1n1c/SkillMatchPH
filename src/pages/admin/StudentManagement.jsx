@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useRef, useState, useDeferredValue, memo } from 'react';
+import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, Edit, Trash2, RefreshCw, X, Save, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import useSWR from 'swr';
 
 // ─── Module-level constants (rendering-hoist-jsx) ────────────────────────────
-// Hoisted outside the component so they are never recreated on re-render.
-
 const EDIT_FIELDS = [
   { key: 'first_name', label: 'First Name', type: 'text' },
   { key: 'last_name', label: 'Last Name', type: 'text' },
@@ -26,7 +25,7 @@ const MODAL_OVERLAY_STYLE = {
   position: 'fixed',
   inset: 0,
   background: 'rgba(0,0,0,0.6)',
-  backdropFilter: 'blur(6px)',
+  backdropFilter: 'blur(8px)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -34,12 +33,21 @@ const MODAL_OVERLAY_STYLE = {
   padding: '1rem',
 };
 
-// ─── EditModal component (rerender-no-inline-components) ─────────────────────
-// Defined at module scope — not inside StudentManagement — so React never
-// unmounts/remounts the modal tree on parent re-renders.
+// ─── Fetcher (client-swr-dedup) ──────────────────────────────────────────────
+const fetchStudents = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'student')
+    .order('created_at', { ascending: false });
 
-const EditModal = ({ student, onClose, onSave }) => {
-  // Initialise form directly from prop (rerender-derived-state-no-effect).
+  if (error) throw error;
+  return data || [];
+};
+
+// ─── Sub-components (rerender-no-inline-components) ──────────────────────────
+
+const EditModal = memo(({ student, onClose, onSave }) => {
   const [form, setForm] = useState(() =>
     EDIT_FIELDS.reduce((acc, { key }) => {
       acc[key] = student[key] ?? '';
@@ -50,18 +58,14 @@ const EditModal = ({ student, onClose, onSave }) => {
   const [error, setError] = useState(null);
   const firstInputRef = useRef(null);
 
-  // Focus the first field when the modal opens.
   useEffect(() => { firstInputRef.current?.focus(); }, []);
 
-  // Close on Escape key.
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // Generic field change handler — stable reference across renders
-  // (rerender-functional-setstate: uses functional update form).
   const handleChange = useCallback((key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -96,62 +100,40 @@ const EditModal = ({ student, onClose, onSave }) => {
         style={{
           background: 'var(--bg-deep, #0d0d14)',
           border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-          borderRadius: '20px',
-          padding: '2rem',
+          borderRadius: '24px',
+          padding: '2.5rem',
           width: '100%',
           maxWidth: '520px',
           maxHeight: '90vh',
           overflowY: 'auto',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Edit Student</h2>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              {student.first_name} {student.last_name}
+            <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>Edit Student</h2>
+            <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Update profile for {student.first_name} {student.last_name}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="action-btn"
-            aria-label="Close edit modal"
-            style={{ padding: '0.5rem' }}
-          >
+          <button type="button" onClick={onClose} className="icon-btn" aria-label="Close modal">
             <X size={20} />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           {EDIT_FIELDS.map(({ key, label, type, options }, idx) => (
-            <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }}>
-              <label
-                htmlFor={`edit-${key}`}
-                style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}
-              >
-                {label}
-              </label>
-
+            <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }} className="form-group">
+              <label htmlFor={`edit-${key}`}>{label}</label>
               {type === 'select' ? (
                 <select
                   id={`edit-${key}`}
                   value={form[key]}
                   onChange={(e) => handleChange(key, e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 1rem',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-                    borderRadius: '10px',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.9rem',
-                    cursor: 'pointer',
-                  }}
+                  style={{ width: '100%', cursor: 'pointer' }}
                 >
                   {options.map((opt) => (
-                    <option key={opt} value={opt} style={{ background: '#1a1a2e' }}>
+                    <option key={opt} value={opt} style={{ background: '#0a0f1e' }}>
                       {opt.charAt(0).toUpperCase() + opt.slice(1)}
                     </option>
                   ))}
@@ -163,47 +145,29 @@ const EditModal = ({ student, onClose, onSave }) => {
                   type={type}
                   value={form[key]}
                   onChange={(e) => handleChange(key, e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 1rem',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-                    borderRadius: '10px',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
+                  style={{ width: '100%' }}
                 />
               )}
             </div>
           ))}
 
-          {/* Error */}
-          {error ? (
-            <p style={{ gridColumn: '1 / -1', margin: 0, color: '#ff4d4d', fontSize: '0.85rem' }}>{error}</p>
-          ) : null}
+          {error && (
+            <p style={{ gridColumn: '1 / -1', margin: 0, color: '#ff4d4d', fontSize: '0.85rem', background: 'rgba(255, 77, 77, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>
+              {error}
+            </p>
+          )}
 
-          {/* Actions */}
-          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} className="action-btn" style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+            <button type="button" onClick={onClose} className="icon-btn" style={{ height: '45px', width: 'auto', padding: '0 1.5rem', borderRadius: '12px' }}>
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="action-btn"
-              style={{
-                padding: '0.65rem 1.25rem',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                background: saving ? 'rgba(0,242,254,0.1)' : 'rgba(0,242,254,0.15)',
-                color: 'var(--accent-teal)',
-                border: '1px solid rgba(0,242,254,0.3)',
-              }}
+              className="submit-btn"
+              style={{ flex: 1, marginTop: 0 }}
             >
-              {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
+              {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -211,10 +175,9 @@ const EditModal = ({ student, onClose, onSave }) => {
       </motion.div>
     </div>
   );
-};
+});
 
-// ─── DeleteConfirmationModal component (rerender-no-inline-components) ──────
-const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) => {
+const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting }) => {
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
@@ -232,40 +195,42 @@ const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) =>
         style={{
           background: 'var(--bg-deep, #0d0d14)',
           border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-          borderRadius: '20px',
-          padding: '2rem',
+          borderRadius: '24px',
+          padding: '2.5rem',
           width: '100%',
-          maxWidth: '400px',
-          textAlign: 'center'
+          maxWidth: '420px',
+          textAlign: 'center',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
         <div style={{
-          width: '60px',
-          height: '60px',
+          width: '64px',
+          height: '64px',
           borderRadius: '50%',
           background: 'rgba(255, 77, 77, 0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 1.5rem',
-          color: '#ff4d4d'
+          color: '#ff4d4d',
+          boxShadow: '0 0 20px rgba(255, 77, 77, 0.1)'
         }}>
-          <Trash2 size={30} />
+          <Trash2 size={32} />
         </div>
 
-        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem' }}>Delete Student?</h2>
-        <p style={{ margin: '0 0 2rem', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Are you sure you want to delete <strong>{student.first_name} {student.last_name}</strong>?
-          This action cannot be undone.
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 700 }}>Delete Student?</h2>
+        <p style={{ margin: '0 0 2.5rem', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Are you sure you want to delete <strong>{student.first_name} {student.last_name}</strong>?<br/>
+          This action will permanently remove their account and cannot be undone.
         </p>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
           <button
             type="button"
             onClick={onClose}
-            className="action-btn"
+            className="icon-btn"
             disabled={isDeleting}
-            style={{ flex: 1, padding: '0.75rem', fontSize: '0.9rem' }}
+            style={{ flex: 1, height: '48px', width: 'auto', borderRadius: '12px' }}
           >
             Cancel
           </button>
@@ -273,280 +238,76 @@ const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) =>
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="action-btn"
+            className="icon-btn delete"
             style={{
               flex: 1,
-              padding: '0.75rem',
-              fontSize: '0.9rem',
-              background: '#ff4d4d20',
+              height: '48px',
+              width: 'auto',
+              borderRadius: '12px',
+              background: 'rgba(255, 77, 77, 0.1)',
               color: '#ff4d4d',
-              border: '1px solid #ff4d4d40',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontWeight: 600,
               gap: '0.5rem'
             }}
           >
-            {isDeleting ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            {isDeleting ? <Loader size={18} className="animate-spin" /> : <Trash2 size={18} />}
             {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </motion.div>
     </div>
   );
-};
+});
 
-// ─── SearchBar component (rerender-memo) ──────────────────────────────────────
 const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
   return (
-    <div style={{ position: 'relative', width: '320px', flexShrink: 0 }}>
-      <div style={{
-        position: 'absolute',
-        left: '1.25rem',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: 'var(--text-secondary)',
-        pointerEvents: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        zIndex: 1
-      }}>
-        <Search size={18} style={{ opacity: value ? 1 : 0.4, transition: 'opacity 0.2s' }} />
-      </div>
-
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Search students..."
-        className="search-input-field"
-        style={{
-          paddingLeft: '3.2rem',
-          paddingRight: '3rem',
-          width: '68%',
-          height: '46px',
-          cursor: 'text',
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid var(--glass-border)',
-          borderRadius: '14px',
-          fontSize: '0.95rem',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = 'var(--accent-teal)';
-          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-          e.target.style.boxShadow = '0 0 0 4px rgba(0, 242, 254, 0.05)';
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = 'var(--glass-border)';
-          e.target.style.background = 'rgba(255, 255, 255, 0.03)';
-          e.target.style.boxShadow = 'none';
-        }}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-
-      {/* Shortcut Hint or Clear Button */}
-      <div style={{
-        position: 'absolute',
-        right: '1rem',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem'
-      }}>
-        {value ? (
+    <div className="glass-card" style={{ padding: '0.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', width: '350px' }}>
+      <div style={{ position: 'relative', flex: 1 }}>
+        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', opacity: value ? 1 : 0.5 }} />
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Search students..."
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '0.75rem 2.5rem 0.75rem 2.8rem',
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            color: '#fff',
+            outline: 'none'
+          }}
+        />
+        {value && (
           <button
             onClick={() => onChange('')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '50%',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-            title="Clear search"
+            style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}
           >
-            <X size={14} />
+            <X size={16} />
           </button>
-        ) : (
-          <div style={{
-            padding: '2px 8px',
-            borderRadius: '6px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--glass-border)',
-            fontSize: '0.75rem',
-            color: 'var(--text-secondary)',
-            pointerEvents: 'none',
-            fontFamily: 'monospace',
-            opacity: 0.6
-          }}>
-            /
-          </div>
         )}
       </div>
     </div>
   );
 });
 
-// ─── StudentTable component (rerender-memo) ───────────────────────────────────
-const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEdit, onDelete }) => {
-  const getStatusStyle = (status) => ({
-    padding: '0.35rem 0.85rem',
-    borderRadius: '20px',
-    background:
-      status === 'approved' ? 'rgba(74, 222, 128, 0.1)' :
-        status === 'rejected' ? 'rgba(255, 77, 77, 0.1)' :
-          'rgba(251, 191, 36, 0.1)',
-    color:
-      status === 'approved' ? '#4ade80' :
-        status === 'rejected' ? '#ff4d4d' :
-          '#fbbf24',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    textTransform: 'capitalize',
-    display: 'inline-block'
-  });
-
-  if (loading && students.length === 0) {
-    return (
-      <div style={{ padding: '6rem 2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        <Loader className="animate-spin" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-        <p>Fetching student profiles...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: '6rem 2rem', textAlign: 'center', color: '#ff4d4d' }}>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  return (
-    <table className="data-table" style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>User ID</th>
-          <th>Joined Date</th>
-          <th>Status</th>
-          <th style={{ textAlign: 'right' }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <AnimatePresence mode="popLayout">
-          {students.map((student, i) => (
-            <motion.tr
-              key={student.id}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2, delay: i * 0.03 }}
-            >
-              <td style={{ fontWeight: 600 }}>
-                {student.first_name ? `${student.first_name} ${student.last_name ?? ''}` : 'N/A'}
-              </td>
-              <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'monospace' }}>
-                {student.id.slice(0, 8)}...
-              </td>
-              <td>{new Date(student.created_at || Date.now()).toLocaleDateString()}</td>
-              <td>
-                <span style={getStatusStyle(student.status)}>
-                  {student.status || 'Pending'}
-                </span>
-              </td>
-              <td>
-                <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
-                  {student.status === 'pending' ? (
-                    <>
-                      <button
-                        onClick={() => onApprove(student.id)}
-                        className="action-btn accent"
-                        style={{ color: 'var(--accent-teal)', fontSize: '0.75rem', fontWeight: 600 }}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => onReject(student.id)}
-                        className="action-btn danger"
-                        style={{ color: '#ff4d4d', fontSize: '0.75rem', fontWeight: 600 }}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  ) : null}
-
-                  <button
-                    className="action-btn"
-                    onClick={() => onEdit(student)}
-                    title="Edit student"
-                    aria-label={`Edit ${student.first_name ?? 'student'}`}
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    className="action-btn delete"
-                    title="Delete student"
-                    onClick={() => onDelete(student)}
-                    aria-label={`Delete ${student.first_name ?? 'student'}`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </td>
-            </motion.tr>
-          ))}
-        </AnimatePresence>
-        {students.length === 0 ? (
-          <tr>
-            <td colSpan="5" style={{ textAlign: 'center', padding: '6rem 2rem', color: 'var(--text-secondary)' }}>
-              <div style={{ marginBottom: '1rem', opacity: 0.2 }}>
-                <Search size={48} style={{ margin: '0 auto' }} />
-              </div>
-              <p>No students found matching your search.</p>
-            </td>
-          </tr>
-        ) : null}
-      </tbody>
-    </table>
-  );
-});
-
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const StudentManagement = () => {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: students = [], error: swrError, isLoading, mutate } = useSWR('admin-students', fetchStudents);
   const [searchTerm, setSearchTerm] = useState('');
-  const deferredSearchTerm = useDeferredValue(searchTerm); // Keep input responsive (rerender-use-deferred-value)
-  const [editTarget, setEditTarget] = useState(null); // student being edited
-  const [deleteTarget, setDeleteTarget] = useState(null); // student being deleted
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useAuth();
 
   const searchInputRef = useRef(null);
 
   useEffect(() => {
-    fetchStudents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Keyboard shortcut for search
-  useEffect(() => {
     const handleKeyDown = (e) => {
-      // Focus search on '/' key press if no other input is focused
       if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -554,24 +315,6 @@ const StudentManagement = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: dbError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'student');
-
-      if (dbError) throw dbError;
-      setStudents(data || []);
-    } catch (err) {
-      setError('Unable to load students. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
   }, []);
 
   const handleApprove = useCallback(async (id) => {
@@ -582,12 +325,11 @@ const StudentManagement = () => {
         .eq('id', id);
 
       if (error) throw error;
-      // Functional setState for stable, optimistic update (rerender-functional-setstate).
-      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'approved' } : s)));
+      mutate(prev => prev.map(s => (s.id === id ? { ...s, status: 'approved' } : s)), false);
     } catch (err) {
       alert('Error approving student: ' + err.message);
     }
-  }, []);
+  }, [mutate]);
 
   const handleReject = useCallback(async (id) => {
     try {
@@ -597,145 +339,141 @@ const StudentManagement = () => {
         .eq('id', id);
 
       if (error) throw error;
-      setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s)));
+      mutate(prev => prev.map(s => (s.id === id ? { ...s, status: 'rejected' } : s)), false);
     } catch (err) {
       alert('Error rejecting student: ' + err.message);
-    }
-  }, []);
+    } [mutate];
+  }, [mutate]);
 
-  // Called by EditModal when the DB write succeeds.
   const handleEditSave = useCallback((updated) => {
-    setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    mutate(prev => prev.map(s => (s.id === updated.id ? updated : s)), false);
     setEditTarget(null);
-  }, []);
-
-  const handleEditClose = useCallback(() => setEditTarget(null), []);
+  }, [mutate]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
-
     setIsDeleting(true);
     try {
-      // Call the RPC function to delete both Auth and Profile
-      const { error } = await supabase.rpc('delete_student', {
-        target_user_id: deleteTarget.id
-      });
-
+      const { error } = await supabase.rpc('delete_student', { target_user_id: deleteTarget.id });
       if (error) throw error;
-
-      // Functional setState for stable update (rerender-functional-setstate).
-      setStudents((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      mutate(prev => prev.filter(s => s.id !== deleteTarget.id), false);
       setDeleteTarget(null);
     } catch (err) {
-      console.error('Delete error:', err);
       alert('Error deleting student: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
-  }, [deleteTarget]);
+  }, [deleteTarget, mutate]);
 
-  const handleDeleteClose = useCallback(() => setDeleteTarget(null), []);
-
-  // Derived filter using deferred value — keeps UI responsive during heavy filtering (rerender-derived-state-no-effect).
-  const filteredStudents = students.filter((student) => {
-    const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.toLowerCase();
-    // Search both name and ID
-    return fullName.includes(deferredSearchTerm.toLowerCase()) ||
-      student.id.toLowerCase().includes(deferredSearchTerm.toLowerCase());
-  });
-
+  const filteredStudents = useMemo(() => {
+    const lowerQuery = deferredSearchTerm.toLowerCase();
+    if (!lowerQuery) return students;
+    return students.filter((student) => {
+      const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.toLowerCase();
+      return fullName.includes(lowerQuery) || student.id.toLowerCase().includes(lowerQuery);
+    });
+  }, [students, deferredSearchTerm]);
 
   return (
-    <>
-      <div className="student-management">
-        <header style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '3rem',
-          gap: '2rem',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{
-              fontSize: '2.8rem',
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
-              marginBottom: '0.5rem',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              Student Management
-            </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-              View and manage student profiles.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button
-              onClick={fetchStudents}
-              className="refresh-btn"
-              title="Refresh list"
-            >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            </button>
-
-            <SearchBar
-              value={searchTerm}
-              onChange={setSearchTerm}
-              inputRef={searchInputRef}
-              isLoading={loading}
-            />
-          </div>
-        </header>
-
-        <div className="data-table-container" style={{
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid var(--glass-border)',
-          borderRadius: '24px',
-          overflow: 'hidden',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <StudentTable
-            students={filteredStudents}
-            loading={loading}
-            error={error}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onEdit={setEditTarget}
-            onDelete={setDeleteTarget}
-          />
+    <div className="admin-page">
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+        <div>
+          <h1 style={{ fontSize: '3rem', margin: 0, lineHeight: 1 }}>Student Management</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 0', fontSize: '1.1rem' }}>
+            View and manage student profiles.
+          </p>
         </div>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button onClick={() => mutate()} className="refresh-btn" title="Refresh list">
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+          <SearchBar value={searchTerm} onChange={setSearchTerm} inputRef={searchInputRef} />
+        </div>
+      </header>
+
+      <div className="data-table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>User ID</th>
+              <th>Joined Date</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <AnimatePresence mode="popLayout">
+              {filteredStudents.map((student, i) => (
+                <motion.tr
+                  key={student.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, delay: i * 0.02 }}
+                >
+                  <td style={{ fontWeight: 600 }}>{student.first_name} {student.last_name}</td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'monospace' }}>{student.id.slice(0, 8)}...</td>
+                  <td>{new Date(student.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <span className={`status-badge ${student.status}`}>
+                      {student.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
+                      {student.status === 'pending' && (
+                        <>
+                          <button onClick={() => handleApprove(student.id)} className="icon-btn" style={{ color: 'var(--accent-teal)', fontSize: '0.75rem', fontWeight: 600, width: 'auto', padding: '0 0.75rem' }}>Approve</button>
+                          <button onClick={() => handleReject(student.id)} className="icon-btn" style={{ color: '#ff4d4d', fontSize: '0.75rem', fontWeight: 600, width: 'auto', padding: '0 0.75rem' }}>Reject</button>
+                        </>
+                      )}
+                      <button onClick={() => setEditTarget(student)} className="icon-btn"><Edit size={16} /></button>
+                      <button onClick={() => setDeleteTarget(student)} className="icon-btn delete"><Trash2 size={16} /></button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
+            {!isLoading && filteredStudents.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '10rem', color: 'var(--text-secondary)' }}>
+                  <Search size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                  <p>No students found matching your search.</p>
+                </td>
+              </tr>
+            )}
+            {isLoading && students.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '10rem' }}>
+                  <Loader className="animate-spin" size={32} color="var(--accent-teal)" />
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* AnimatePresence handles mount/unmount animations for the modal */}
       <AnimatePresence>
-        {editTarget ? (
-          <EditModal
-            key={editTarget.id}
-            student={editTarget}
-            onClose={handleEditClose}
-            onSave={handleEditSave}
-          />
-        ) : null}
-
-        {deleteTarget ? (
-          <DeleteConfirmationModal
-            key={`delete-${deleteTarget.id}`}
-            student={deleteTarget}
-            onClose={handleDeleteClose}
-            onConfirm={handleDelete}
-            isDeleting={isDeleting}
-          />
-        ) : null}
+        {editTarget && <EditModal student={editTarget} onClose={() => setEditTarget(null)} onSave={handleEditSave} />}
+        {deleteTarget && <DeleteConfirmationModal student={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} isDeleting={isDeleting} />}
       </AnimatePresence>
-    </>
+
+      <style>{`
+        .status-badge {
+          padding: 0.35rem 0.85rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          display: inline-block;
+        }
+        .status-badge.approved { background: rgba(74, 222, 128, 0.1); color: #4ade80; }
+        .status-badge.rejected { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; }
+        .status-badge.pending { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+      `}</style>
+    </div>
   );
 };
 
