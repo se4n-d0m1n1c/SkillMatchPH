@@ -5,6 +5,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import StudentManagement from './pages/admin/StudentManagement'
 import UniversityManagement from './pages/admin/UniversityManagement'
+import ProgramManagement from './pages/admin/ProgramManagement'
 import PendingPage from './pages/PendingPage'
 import RejectedPage from './pages/RejectedPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -90,6 +91,14 @@ function App() {
           <ProtectedRoute adminOnly>
             <AdminLayout>
               <UniversityManagement />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/programs" element={
+          <ProtectedRoute adminOnly>
+            <AdminLayout>
+              <ProgramManagement />
             </AdminLayout>
           </ProtectedRoute>
         } />
