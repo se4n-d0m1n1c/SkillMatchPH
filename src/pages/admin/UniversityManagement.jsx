@@ -8,7 +8,16 @@ import {
 import useSWR, { useSWRConfig } from 'swr';
 import { supabase } from '../../lib/supabase';
 
-// ─── Fetchers (async-parallel optimization) ──────────────────────────────────
+// ─── Constants & Fetchers (async-parallel & rerender-memo-with-default-value) ─
+const EMPTY_ARRAY = [];
+const INITIAL_UNI_FORM = {
+  name: '',
+  location: '',
+  website: '',
+  logo_url: '',
+  program_ids: []
+};
+
 const fetchManagementData = async () => {
   const [uniResult, progResult] = await Promise.all([
     supabase.from('universities').select('*, program_universities(program_id)').order('name'),
@@ -66,24 +75,19 @@ const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
         <div style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(112, 0, 255, 0.1)', color: 'var(--accent-violet)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
           <GraduationCap size={14} /> {university.program_ids.length} Programs
         </div>
-        {university.website && (
+        {university.website ? (
           <a href={university.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', transition: 'all 0.2s', border: '1px solid transparent' }} className="hover-border">
             <Globe size={14} /> Website <ExternalLink size={12} />
           </a>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );
 });
 
 const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
-  const [formData, setFormData] = useState(university || {
-    name: '',
-    location: '',
-    website: '',
-    logo_url: '',
-    program_ids: []
-  });
+  // Use lazy state initialization to prevent object recreation on every modal render (rerender-lazy-state-init)
+  const [formData, setFormData] = useState(() => university || INITIAL_UNI_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -213,11 +217,11 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
             </div>
           </div>
 
-          {error && (
+          {error ? (
             <div role="alert" style={{ color: '#ff4d4d', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 77, 77, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>
               <AlertCircle size={16} /> {error}
             </div>
-          )}
+          ) : null}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
             <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px', width: 'auto' }}>Cancel</button>
@@ -243,9 +247,9 @@ const UniversityManagement = () => {
   // 1. Search Filtering
   const filteredUniversities = useMemo(() => {
     const lowerQuery = deferredSearchQuery.toLowerCase();
-    if (!data?.universities) return [];
-    if (!lowerQuery) return data.universities;
-    return data.universities.filter(u =>
+    const unis = data?.universities || EMPTY_ARRAY;
+    if (!lowerQuery) return unis;
+    return unis.filter(u =>
       u.name.toLowerCase().includes(lowerQuery) ||
       u.location?.toLowerCase().includes(lowerQuery)
     );
@@ -266,9 +270,13 @@ const UniversityManagement = () => {
         if (uniErr) throw uniErr;
       }
 
-      const currentProgramIds = selectedUni?.program_ids || [];
-      const toAdd = program_ids.filter(id => !currentProgramIds.includes(id));
-      const toRemove = currentProgramIds.filter(id => !program_ids.includes(id));
+      // Optimize linking logic using Set for O(1) lookups (js-set-map-lookups)
+      const currentProgramIds = selectedUni?.program_ids || EMPTY_ARRAY;
+      const currentSet = new Set(currentProgramIds);
+      const newSet = new Set(program_ids);
+
+      const toAdd = program_ids.filter(id => !currentSet.has(id));
+      const toRemove = currentProgramIds.filter(id => !newSet.has(id));
 
       if (toRemove.length > 0) {
         await supabase.from('program_universities').delete().eq('university_id', universityId).in('program_id', toRemove);
@@ -365,14 +373,14 @@ const UniversityManagement = () => {
 
       {/* Modal */}
       <AnimatePresence>
-        {modalMode && (
+        {modalMode ? (
           <UniversityModal
             university={selectedUni}
-            programs={data?.programs || []}
+            programs={data?.programs || EMPTY_ARRAY}
             onClose={() => setModalMode(null)}
             onSave={handleSave}
           />
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

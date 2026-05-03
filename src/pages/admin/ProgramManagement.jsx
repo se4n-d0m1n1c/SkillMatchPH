@@ -12,8 +12,15 @@ import {
 import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
 
-// ─── Constants & Icons (rendering-hoist-jsx) ─────────────────────────────────
+// ─── Constants & Fetchers (rendering-hoist-jsx & rerender-memo-with-default-value)
 const CATEGORIES = ['Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
+const EMPTY_ARRAY = [];
+const INITIAL_PROG_FORM = {
+  title: '',
+  category: CATEGORIES[0],
+  description: '',
+  icon_name: 'BookOpen'
+};
 
 const ICON_MAP = {
   Code: <Code size={24} />,
@@ -48,7 +55,6 @@ const ICON_MAP = {
   Palette: <Palette size={24} />,
 };
 
-// ─── Fetcher (client-swr-dedup) ──────────────────────────────────────────────
 const fetchPrograms = async () => {
   const { data, error } = await supabase
     .from('programs')
@@ -56,7 +62,7 @@ const fetchPrograms = async () => {
     .order('title');
 
   if (error) throw error;
-  return data || [];
+  return data || EMPTY_ARRAY;
 };
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
@@ -101,12 +107,7 @@ const ProgramCard = memo(({ program, onEdit, onDelete, index }) => {
 });
 
 const ProgramModal = memo(({ program, onClose, onSave }) => {
-  const [formData, setFormData] = useState(program || {
-    title: '',
-    category: CATEGORIES[0],
-    description: '',
-    icon_name: 'BookOpen'
-  });
+  const [formData, setFormData] = useState(() => program || INITIAL_PROG_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -211,11 +212,11 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
             />
           </div>
 
-          {error && (
+          {error ? (
             <div role="alert" style={{ color: '#ff4d4d', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 77, 77, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>
               <AlertCircle size={16} /> {error}
             </div>
-          )}
+          ) : null}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
             <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px', width: 'auto' }}>Cancel</button>
@@ -241,9 +242,9 @@ const ProgramManagement = () => {
   // 1. Search Filtering
   const filteredPrograms = useMemo(() => {
     const lowerQuery = deferredSearchQuery.toLowerCase();
-    if (!programs) return [];
-    if (!lowerQuery) return programs;
-    return programs.filter(p =>
+    const allProgs = programs || EMPTY_ARRAY;
+    if (!lowerQuery) return allProgs;
+    return allProgs.filter(p =>
       p.title.toLowerCase().includes(lowerQuery) ||
       p.category.toLowerCase().includes(lowerQuery)
     );
@@ -348,13 +349,13 @@ const ProgramManagement = () => {
 
       {/* Modal */}
       <AnimatePresence>
-        {modalMode && (
+        {modalMode ? (
           <ProgramModal
             program={selectedProg}
             onClose={() => setModalMode(null)}
             onSave={handleSave}
           />
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );
