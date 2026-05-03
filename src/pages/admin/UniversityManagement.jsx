@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useDeferredValue } from 'react';
+import React, { useState, useMemo, useCallback, useDeferredValue, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Plus, Search, Edit2, Trash2, X,
@@ -29,8 +29,54 @@ const fetchManagementData = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-// Memoize modal to prevent re-renders when parent list changes
-const UniversityModal = React.memo(({ university, programs, onClose, onSave }) => {
+const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="glass-card"
+      style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '24px' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{
+          width: '60px', height: '60px', borderRadius: '16px',
+          background: 'rgba(0, 242, 254, 0.1)', color: 'var(--accent-teal)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 8px 16px rgba(0, 242, 254, 0.05)'
+        }}>
+          <Building size={28} />
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={() => onEdit(university)} className="icon-btn" title="Edit"><Edit2 size={18} /></button>
+          <button onClick={() => onDelete(university.id)} className="icon-btn delete" title="Delete"><Trash2 size={18} /></button>
+        </div>
+      </div>
+
+      <div>
+        <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700 }}>{university.name}</h3>
+        <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MapPin size={16} /> {university.location || 'No location set'}
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: 'auto' }}>
+        <div style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(112, 0, 255, 0.1)', color: 'var(--accent-violet)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+          <GraduationCap size={14} /> {university.program_ids.length} Programs
+        </div>
+        {university.website && (
+          <a href={university.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', transition: 'all 0.2s', border: '1px solid transparent' }} className="hover-border">
+            <Globe size={14} /> Website <ExternalLink size={12} />
+          </a>
+        )}
+      </div>
+    </motion.div>
+  );
+});
+
+const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
   const [formData, setFormData] = useState(university || {
     name: '',
     location: '',
@@ -95,7 +141,6 @@ const UniversityModal = React.memo(({ university, programs, onClose, onSave }) =
               value={formData.name}
               onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g. Taguig City University"
-              aria-required="true"
             />
           </div>
 
@@ -158,12 +203,7 @@ const UniversityModal = React.memo(({ university, programs, onClose, onSave }) =
                     type="checkbox"
                     checked={formData.program_ids.includes(prog.id)}
                     onChange={() => toggleProgram(prog.id)}
-                    style={{
-                      cursor: 'pointer',
-                      accentColor: 'var(--accent-teal)',
-                      width: '16px',
-                      height: '16px'
-                    }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--accent-teal)', width: '16px', height: '16px' }}
                   />
                   <span style={{ color: formData.program_ids.includes(prog.id) ? 'var(--accent-teal)' : 'var(--text-secondary)' }}>
                     {prog.title}
@@ -180,7 +220,7 @@ const UniversityModal = React.memo(({ university, programs, onClose, onSave }) =
           )}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px' }}>Cancel</button>
+            <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px', width: 'auto' }}>Cancel</button>
             <button type="submit" disabled={isSaving} className="submit-btn" style={{ flex: 2, marginTop: 0 }}>
               {isSaving ? <Loader2 className="animate-spin" /> : (university ? 'Save Changes' : 'Create University')}
             </button>
@@ -202,8 +242,8 @@ const UniversityManagement = () => {
 
   // 1. Search Filtering
   const filteredUniversities = useMemo(() => {
-    if (!data?.universities) return [];
     const lowerQuery = deferredSearchQuery.toLowerCase();
+    if (!data?.universities) return [];
     if (!lowerQuery) return data.universities;
     return data.universities.filter(u =>
       u.name.toLowerCase().includes(lowerQuery) ||
@@ -212,67 +252,52 @@ const UniversityManagement = () => {
   }, [data?.universities, deferredSearchQuery]);
 
   // 2. CRUD Operations
-  const handleSave = async (formData) => {
-    const { program_ids, ...uniData } = formData;
-
+  const handleSave = useCallback(async (formData) => {
+    const { program_ids, program_universities, ...uniData } = formData;
     let universityId = selectedUni?.id;
 
-    if (modalMode === 'add') {
-      const { data: newUni, error: uniErr } = await supabase
-        .from('universities')
-        .insert([uniData])
-        .select()
-        .single();
-      if (uniErr) throw uniErr;
-      universityId = newUni.id;
-    } else {
-      const { error: uniErr } = await supabase
-        .from('universities')
-        .update(uniData)
-        .eq('id', universityId);
-      if (uniErr) throw uniErr;
-    }
+    try {
+      if (modalMode === 'add') {
+        const { data: newUni, error: uniErr } = await supabase.from('universities').insert([uniData]).select().single();
+        if (uniErr) throw uniErr;
+        universityId = newUni.id;
+      } else {
+        const { error: uniErr } = await supabase.from('universities').update(uniData).eq('id', universityId);
+        if (uniErr) throw uniErr;
+      }
 
-    // Update Program Links
-    const currentProgramIds = selectedUni?.program_ids || [];
-    const toAdd = program_ids.filter(id => !currentProgramIds.includes(id));
-    const toRemove = currentProgramIds.filter(id => !program_ids.includes(id));
+      const currentProgramIds = selectedUni?.program_ids || [];
+      const toAdd = program_ids.filter(id => !currentProgramIds.includes(id));
+      const toRemove = currentProgramIds.filter(id => !program_ids.includes(id));
 
-    if (toRemove.length > 0) {
-      await supabase
-        .from('program_universities')
-        .delete()
-        .eq('university_id', universityId)
-        .in('program_id', toRemove);
-    }
-
-    if (toAdd.length > 0) {
-      const links = toAdd.map(pid => ({
-        university_id: universityId,
-        program_id: pid
-      }));
-      await supabase
-        .from('program_universities')
-        .insert(links);
-    }
-
-    mutate();
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this university? All program links will be removed.')) return;
-
-    const { error } = await supabase
-      .from('universities')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert('Error deleting university: ' + error.message);
-    } else {
+      if (toRemove.length > 0) {
+        await supabase.from('program_universities').delete().eq('university_id', universityId).in('program_id', toRemove);
+      }
+      if (toAdd.length > 0) {
+        const links = toAdd.map(pid => ({ university_id: universityId, program_id: pid }));
+        await supabase.from('program_universities').insert(links);
+      }
       mutate();
+    } catch (err) {
+      alert('Error saving university: ' + err.message);
     }
-  };
+  }, [modalMode, selectedUni, mutate]);
+
+  const handleDelete = useCallback(async (id) => {
+    if (!window.confirm('Are you sure you want to delete this university? All program links will be removed.')) return;
+    try {
+      const { error } = await supabase.from('universities').delete().eq('id', id);
+      if (error) throw error;
+      mutate();
+    } catch (err) {
+      alert('Error deleting university: ' + err.message);
+    }
+  }, [mutate]);
+
+  const handleEdit = useCallback((uni) => {
+    setSelectedUni(uni);
+    setModalMode('edit');
+  }, []);
 
   return (
     <div className="admin-page">
@@ -295,24 +320,24 @@ const UniversityManagement = () => {
       </header>
 
       {/* Toolbar */}
-      <div className="glass-card" style={{ marginBottom: '3rem', padding: '1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px' }}>
+      <div className="glass-card" style={{ marginBottom: '3rem', padding: '1.25rem 1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px', maxWidth: '500px' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
           <input
             id="uni-search"
             type="text"
-            placeholder="Search universities by name or location..."
+            placeholder="Search universities..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            aria-label="Search universities"
             style={{
-              width: '95%',
-              padding: '1rem 1rem 1rem 3.5rem',
+              width: '100%',
+              padding: '0.85rem 1rem 0.85rem 3.5rem',
               background: 'rgba(0,0,0,0.2)',
               border: '1px solid var(--glass-border)',
-              borderRadius: '14px',
+              borderRadius: '12px',
               color: '#fff',
-              fontSize: '1rem'
+              fontSize: '0.95rem',
+              outline: 'none'
             }}
           />
         </div>
@@ -332,59 +357,7 @@ const UniversityManagement = () => {
             </div>
           ) : (
             filteredUniversities.map((uni, i) => (
-              <motion.div
-                key={uni.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-                className="glass-card"
-                style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '24px' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '60px', height: '60px', borderRadius: '16px',
-                    background: 'rgba(0, 242, 254, 0.1)', color: 'var(--accent-teal)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 8px 16px rgba(0, 242, 254, 0.05)'
-                  }}>
-                    <Building size={28} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button
-                      onClick={() => { setSelectedUni(uni); setModalMode('edit'); }}
-                      className="icon-btn" title="Edit"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(uni.id)}
-                      className="icon-btn delete" title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 700 }}>{uni.name}</h3>
-                  <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <MapPin size={16} /> {uni.location || 'No location set'}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: 'auto' }}>
-                  <div style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(112, 0, 255, 0.1)', color: 'var(--accent-violet)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
-                    <GraduationCap size={14} /> {uni.program_ids.length} Programs
-                  </div>
-                  {uni.website && (
-                    <a href={uni.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', transition: 'all 0.2s', border: '1px solid transparent' }} className="hover-border">
-                      <Globe size={14} /> Website <ExternalLink size={12} />
-                    </a>
-                  )}
-                </div>
-              </motion.div>
+              <UniversityCard key={uni.id} university={uni} onEdit={handleEdit} onDelete={handleDelete} index={i} />
             ))
           )}
         </AnimatePresence>
