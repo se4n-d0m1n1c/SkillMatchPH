@@ -160,8 +160,7 @@ const AdminDashboard = () => {
 
         <button
           onClick={() => mutate()}
-          className="social-btn"
-          style={{ width: '45px', padding: 0, justifyContent: 'center', marginTop: '0.5rem' }}
+          className="refresh-btn"
           title="Refresh dashboard"
           aria-label="Refresh dashboard data"
         >

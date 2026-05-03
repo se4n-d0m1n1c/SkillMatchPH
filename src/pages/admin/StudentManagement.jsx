@@ -213,6 +213,89 @@ const EditModal = ({ student, onClose, onSave }) => {
   );
 };
 
+// ─── DeleteConfirmationModal component (rerender-no-inline-components) ──────
+const DeleteConfirmationModal = ({ student, onClose, onConfirm, isDeleting }) => {
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1,    y: 0  }}
+        exit={{   opacity: 0, scale: 0.95, y: 20  }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-deep, #0d0d14)',
+          border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
+          borderRadius: '20px',
+          padding: '2rem',
+          width: '100%',
+          maxWidth: '400px',
+          textAlign: 'center'
+        }}
+      >
+        <div style={{ 
+          width: '60px', 
+          height: '60px', 
+          borderRadius: '50%', 
+          background: 'rgba(255, 77, 77, 0.1)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          margin: '0 auto 1.5rem',
+          color: '#ff4d4d'
+        }}>
+          <Trash2 size={30} />
+        </div>
+
+        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem' }}>Delete Student?</h2>
+        <p style={{ margin: '0 0 2rem', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          Are you sure you want to delete <strong>{student.first_name} {student.last_name}</strong>? 
+          This action cannot be undone.
+        </p>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="action-btn" 
+            disabled={isDeleting}
+            style={{ flex: 1, padding: '0.75rem', fontSize: '0.9rem' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="action-btn"
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              fontSize: '0.9rem',
+              background: '#ff4d4d20',
+              color: '#ff4d4d',
+              border: '1px solid #ff4d4d40',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            {isDeleting ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── SearchBar component (rerender-memo) ──────────────────────────────────────
 const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
   return (
@@ -235,7 +318,7 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
         ref={inputRef}
         type="text"
         placeholder="Search students..."
-        className="social-btn"
+        className="search-input-field"
         style={{
           paddingLeft: '3.2rem',
           paddingRight: '3rem',
@@ -313,7 +396,7 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
 });
 
 // ─── StudentTable component (rerender-memo) ───────────────────────────────────
-const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEdit }) => {
+const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEdit, onDelete }) => {
   const getStatusStyle = (status) => ({
     padding: '0.35rem 0.85rem',
     borderRadius: '20px',
@@ -411,7 +494,12 @@ const StudentTable = memo(({ students, loading, error, onApprove, onReject, onEd
                   >
                     <Edit size={16} />
                   </button>
-                  <button className="action-btn delete" title="Delete student">
+                  <button 
+                    className="action-btn delete" 
+                    title="Delete student"
+                    onClick={() => onDelete(student)}
+                    aria-label={`Delete ${student.first_name ?? 'student'}`}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -443,9 +531,10 @@ const StudentManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm); // Keep input responsive (rerender-use-deferred-value)
   const [editTarget, setEditTarget] = useState(null); // student being edited
+  const [deleteTarget, setDeleteTarget] = useState(null); // student being deleted
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // role is guaranteed 'admin' by ProtectedRoute; only destructured for clarity.
-  const { role } = useAuth();
+  useAuth();
 
   const searchInputRef = useRef(null);
 
@@ -522,6 +611,31 @@ const StudentManagement = () => {
 
   const handleEditClose = useCallback(() => setEditTarget(null), []);
 
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      // Call the RPC function to delete both Auth and Profile
+      const { error } = await supabase.rpc('delete_student', { 
+        target_user_id: deleteTarget.id 
+      });
+
+      if (error) throw error;
+
+      // Functional setState for stable update (rerender-functional-setstate).
+      setStudents((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Error deleting student: ' + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteTarget]);
+
+  const handleDeleteClose = useCallback(() => setDeleteTarget(null), []);
+
   // Derived filter using deferred value — keeps UI responsive during heavy filtering (rerender-derived-state-no-effect).
   const filteredStudents = students.filter((student) => {
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.toLowerCase();
@@ -566,16 +680,7 @@ const StudentManagement = () => {
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button
               onClick={fetchStudents}
-              className="social-btn"
-              style={{ 
-                width: '46px', 
-                height: '46px', 
-                padding: 0, 
-                justifyContent: 'center', 
-                borderRadius: '14px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid var(--glass-border)'
-              }}
+              className="refresh-btn"
               title="Refresh list"
             >
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -604,6 +709,7 @@ const StudentManagement = () => {
             onApprove={handleApprove}
             onReject={handleReject}
             onEdit={setEditTarget}
+            onDelete={setDeleteTarget}
           />
         </div>
       </div>
@@ -616,6 +722,16 @@ const StudentManagement = () => {
             student={editTarget}
             onClose={handleEditClose}
             onSave={handleEditSave}
+          />
+        ) : null}
+
+        {deleteTarget ? (
+          <DeleteConfirmationModal
+            key={`delete-${deleteTarget.id}`}
+            student={deleteTarget}
+            onClose={handleDeleteClose}
+            onConfirm={handleDelete}
+            isDeleting={isDeleting}
           />
         ) : null}
       </AnimatePresence>

@@ -143,3 +143,36 @@
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* ── Refresh Button ───────────────────────────────────────── */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 245, 255, 0.1);
+}
+
+.refresh-btn:active {
+  transform: translateY(0);
+}
+
+.refresh-btn .animate-spin {
+  filter: drop-shadow(0 0 5px var(--accent-teal));
+}
