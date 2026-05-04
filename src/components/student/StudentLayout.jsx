@@ -81,7 +81,23 @@ const StudentLayout = ({ children }) => {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <h1 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--accent-teal)' }}>SkillMatchPH</h1>
+            <Link to="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+              <svg viewBox="0 0 440 90" width="180" height="37" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="gd_nav" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#7C3AED"/>
+                    <stop offset="100%" stop-color="#06B6D4"/>
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="90" height="90" rx="20" fill="url(#gd_nav)"/>
+                <path d="M22,70 C30,40 60,56 68,22" stroke="white" stroke-width="2.5" fill="none" opacity="0.3" stroke-linecap="round"/>
+                <circle cx="22" cy="70" r="7.5" fill="white"/>
+                <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
+                <circle cx="68" cy="22" r="10" fill="white"/>
+                <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
+                <text x="110" y="60" font-family="Inter, -apple-system, sans-serif" font-size="44" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="28" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
+              </svg>
+            </Link>
           </motion.div>
 
           {/* Hamburger Button (Mobile Only) */}
