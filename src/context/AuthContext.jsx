@@ -103,6 +103,15 @@ export const AuthProvider = ({ children }) => {
     return supabase.auth.signInWithPassword({ email, password });
   };
 
+  const verifyOtp = async (email, token, type = 'signup') => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type,
+    });
+    return { data, error };
+  };
+
   const signOut = async () => {
     // State is cleared reactively via onAuthStateChange(SIGNED_OUT)
     await supabase.auth.signOut();
@@ -111,6 +120,7 @@ export const AuthProvider = ({ children }) => {
   const value = React.useMemo(() => ({
     signUp,
     signIn,
+    verifyOtp,
     signOut,
     user,
     session,
