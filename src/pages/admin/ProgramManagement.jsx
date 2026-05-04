@@ -140,7 +140,6 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
         exit={{ scale: 0.95, y: 20 }}
         className="glass-card modal-content"
         onClick={e => e.stopPropagation()}
-        style={{ padding: '2.5rem', maxWidth: '600px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.75rem' }}>{program ? 'Edit Program' : 'Add Program'}</h2>
@@ -159,7 +158,7 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
               <label htmlFor="prog-category">Category</label>
               <select
@@ -197,18 +196,6 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Provide a brief overview of the program..."
-              style={{
-                width: '100%',
-                padding: '0.85rem 1rem',
-                background: 'rgba(0,0,0,0.2)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: '12px',
-                color: '#fff',
-                fontSize: '0.95rem',
-                outline: 'none',
-                resize: 'none',
-                fontFamily: 'inherit'
-              }}
             />
           </div>
 
@@ -218,9 +205,9 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
             </div>
           ) : null}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px', width: 'auto' }}>Cancel</button>
-            <button type="submit" disabled={isSaving} className="submit-btn" style={{ flex: 2, marginTop: 0 }}>
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
+            <button type="submit" disabled={isSaving} className="submit-btn">
               {isSaving ? <Loader2 className="animate-spin" /> : (program ? 'Save Changes' : 'Create Program')}
             </button>
           </div>
@@ -285,9 +272,9 @@ const ProgramManagement = () => {
 
   return (
     <div className="admin-page">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+      <header className="page-header">
         <div>
-          <h1 style={{ fontSize: '3rem', margin: 0, lineHeight: 1 }}>Program Management</h1>
+          <h1 style={{ margin: 0 }}>Program Management</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 0', fontSize: '1.1rem' }}>
             Manage the catalog of academic programs and career paths.
           </p>
@@ -304,26 +291,28 @@ const ProgramManagement = () => {
       </header>
 
       {/* Toolbar */}
-      <div className="glass-card" style={{ marginBottom: '3rem', padding: '1.25rem 1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px', maxWidth: '500px' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input
-            id="prog-search"
-            type="text"
-            placeholder="Search programs..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem 0.85rem 3.5rem',
-              background: 'rgba(0,0,0,0.2)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '12px',
-              color: '#fff',
-              fontSize: '0.95rem',
-              outline: 'none'
-            }}
-          />
+      <div className="search-container" style={{ marginBottom: '3rem' }}>
+        <div className="glass-card" style={{ padding: '1.25rem 1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px', maxWidth: '500px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input
+              id="prog-search"
+              type="text"
+              placeholder="Search programs..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem 0.85rem 3.5rem',
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '12px',
+                color: '#fff',
+                fontSize: '0.95rem',
+                outline: 'none'
+              }}
+            />
+          </div>
         </div>
       </div>
 

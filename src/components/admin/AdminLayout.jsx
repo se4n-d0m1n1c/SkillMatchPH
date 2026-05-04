@@ -1,11 +1,28 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, Settings, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Admin.css';
 
 const AdminLayout = ({ children }) => {
   const { signOut } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Prevent scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [sidebarOpen]);
 
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/admin' },
@@ -17,9 +34,38 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <div className="admin-logo">
-          <h2 style={{ color: 'var(--accent-teal)', margin: 0 }}>SkillMatch Admin</h2>
+      {/* Mobile Header */}
+      <header className="mobile-header">
+        <button 
+          className="menu-toggle" 
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu size={24} />
+        </button>
+        <span className="mobile-brand">SkillMatch Admin</span>
+      </header>
+
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="sidebar-overlay" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="admin-logo">
+            <h2 style={{ color: 'var(--accent-teal)', margin: 0 }}>SkillMatch Admin</h2>
+          </div>
+          <button 
+            className="sidebar-close" 
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X size={24} />
+          </button>
         </div>
         
         <nav className="nav-links">
@@ -35,13 +81,12 @@ const AdminLayout = ({ children }) => {
           ))}
         </nav>
 
-        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+        <div className="sidebar-footer">
           <button 
             onClick={async () => {
               await signOut();
             }} 
             className="signout-btn" 
-            style={{ width: '100%', justifyContent: 'center' }}
           >
             <LogOut size={20} />
             <span>Sign Out</span>
