@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useDeferredValue, memo } from 'react';
+import React, { useState, useMemo, useCallback, useDeferredValue, memo, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Plus, Search, Edit2, Trash2, X,
@@ -67,9 +67,10 @@ const fetchPrograms = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-const ProgramCard = memo(({ program, onEdit, onDelete, index }) => {
+const ProgramCard = memo(forwardRef(({ program, onEdit, onDelete, index }, ref) => {
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -104,9 +105,9 @@ const ProgramCard = memo(({ program, onEdit, onDelete, index }) => {
       </div>
     </motion.div>
   );
-});
+}));
 
-const ProgramModal = memo(({ program, onClose, onSave }) => {
+const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
   const [formData, setFormData] = useState(() => program || INITIAL_PROG_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -126,6 +127,7 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -215,7 +217,7 @@ const ProgramModal = memo(({ program, onClose, onSave }) => {
       </motion.div>
     </motion.div>
   );
-});
+}));
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 

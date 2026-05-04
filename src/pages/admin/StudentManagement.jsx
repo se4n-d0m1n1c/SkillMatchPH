@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo, forwardRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, Edit, Trash2, RefreshCw, X, Save, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,7 +47,7 @@ const fetchStudents = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-const EditModal = memo(({ student, onClose, onSave }) => {
+const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
   const [form, setForm] = useState(() =>
     EDIT_FIELDS.reduce((acc, { key }) => {
       acc[key] = student[key] ?? '';
@@ -90,7 +90,7 @@ const EditModal = memo(({ student, onClose, onSave }) => {
   };
 
   return (
-    <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Edit student">
+    <div ref={ref} style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Edit student">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -161,9 +161,9 @@ const EditModal = memo(({ student, onClose, onSave }) => {
       </motion.div>
     </div>
   );
-});
+}));
 
-const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting }) => {
+const DeleteConfirmationModal = memo(forwardRef(({ student, onClose, onConfirm, isDeleting }, ref) => {
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
@@ -171,7 +171,7 @@ const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting 
   }, [onClose]);
 
   return (
-    <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
+    <div ref={ref} style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -243,7 +243,7 @@ const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting 
       </motion.div>
     </div>
   );
-});
+}));
 
 const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
   return (

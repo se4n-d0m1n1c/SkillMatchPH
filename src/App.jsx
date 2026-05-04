@@ -23,7 +23,11 @@ function App() {
       <Routes>
         {/* Public Route */}
         <Route path="/" element={!user ? <AuthPage /> : (
-          (loading && !role) ? <div className="loading-screen" /> : (
+          (loading && !role) ? (
+            <div className="loading-screen">
+              <div className="loader"></div>
+            </div>
+          ) : (
             role === 'admin' ? <Navigate to="/admin" replace /> : (
               status === 'pending' ? <Navigate to="/pending" replace /> : (
                 status === 'rejected' ? <Navigate to="/rejected" replace /> : <Navigate to="/dashboard" replace />

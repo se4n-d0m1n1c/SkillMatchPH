@@ -28,8 +28,6 @@ const AuthForm = ({ isLogin, toggleForm }) => {
   const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState(INITIAL_FORM);
 
-  console.log('Current showOtp state:', showOtp);
-
   // Derived state — no useEffect needed (rerender-derived-state-no-effect)
   const availableStrands = STRANDS_MAP[formData.shsTrack];
 
@@ -56,7 +54,6 @@ const AuthForm = ({ isLogin, toggleForm }) => {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
       } else {
-        console.log('Signing up with:', formData.email);
         const { error } = await signUp(formData.email, formData.password, {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -66,11 +63,9 @@ const AuthForm = ({ isLogin, toggleForm }) => {
           shsStrand: formData.shsStrand,
         });
         if (error) throw error;
-        console.log('Signup success, setting showOtp to true');
         setShowOtp(true);
       }
     } catch (err) {
-      console.error('Submit error:', err.message);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -111,18 +106,18 @@ const AuthForm = ({ isLogin, toggleForm }) => {
           >
             <div className="form-header" style={{ marginBottom: '2rem' }}>
               <h3>Verify your email</h3>
-              <p>We've sent a verification code to<br/><strong>{formData.email}</strong></p>
+              <p>We've sent a verification code to<br /><strong>{formData.email}</strong></p>
             </div>
-            
+
             <form onSubmit={handleVerify} className="auth-form">
               <div className="input-group">
                 <Hash className="input-icon" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Enter verification code" 
-                  required 
+                <input
+                  type="text"
+                  placeholder="Enter verification code"
+                  required
                   maxLength={8}
-                  value={otp} 
+                  value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   style={{ textAlign: 'center', letterSpacing: '0.4rem', fontSize: '1.25rem' }}
                 />
@@ -142,9 +137,9 @@ const AuthForm = ({ isLogin, toggleForm }) => {
 
             <div className="toggle-auth" style={{ marginTop: '2rem' }}>
               Didn't receive a code?{' '}
-              <button 
-                onClick={() => setShowOtp(false)} 
-                className="toggle-link" 
+              <button
+                onClick={() => setShowOtp(false)}
+                className="toggle-link"
                 style={{ fontSize: '0.875rem' }}
               >
                 Back to Sign Up

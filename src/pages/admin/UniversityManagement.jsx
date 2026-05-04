@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useDeferredValue, memo } from 'react';
+import React, { useState, useMemo, useCallback, useDeferredValue, memo, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Plus, Search, Edit2, Trash2, X,
@@ -38,9 +38,10 @@ const fetchManagementData = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
+const UniversityCard = memo(forwardRef(({ university, onEdit, onDelete, index }, ref) => {
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -83,9 +84,9 @@ const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
       </div>
     </motion.div>
   );
-});
+}));
 
-const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
+const UniversityModal = memo(forwardRef(({ university, programs, onClose, onSave }, ref) => {
   // Use lazy state initialization to prevent object recreation on every modal render (rerender-lazy-state-init)
   const [formData, setFormData] = useState(() => university || INITIAL_UNI_FORM);
   const [isSaving, setIsSaving] = useState(false);
@@ -115,6 +116,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -232,7 +234,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
       </motion.div>
     </motion.div>
   );
-});
+}));
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 

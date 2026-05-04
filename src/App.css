@@ -16,6 +16,19 @@
   z-index: 9999;
 }
 
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(0, 245, 255, 0.1);
+  border-left-color: #00f5ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Student Layout Navigation */
 .mobile-menu-btn {
   display: none;

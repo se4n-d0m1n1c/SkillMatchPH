@@ -34,39 +34,52 @@ export const AuthProvider = ({ children }) => {
     roleRef.current = role;
   }, [role]);
 
-  useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'TOKEN_REFRESHED') return;
+  const handleAuthStateChange = async (event, session) => {
+    if (event === 'TOKEN_REFRESHED') return;
 
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setRole(null);
-        setStatus(null);
-        setLoading(false);
-        return;
-      }
+    if (event === 'SIGNED_OUT') {
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setRole(null);
+      setStatus(null);
+      setLoading(false);
+      return;
+    }
 
-      setSession(session);
-      setUser(session?.user ?? null);
+    setSession(session);
+    setUser(session?.user ?? null);
 
-      if (session?.user) {
-        // Use ref to avoid stale closure (role is always null in this closure otherwise)
-        if (!roleRef.current) {
-          setLoading(true);
-          try {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
-            setRole(profileData.role);
-            setStatus(profileData.status);
-          } catch (error) {
-            console.error('Error fetching profile:', error);
-          }
+    if (session?.user) {
+      if (!roleRef.current) {
+        setLoading(true);
+        try {
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+          setRole(profileData.role);
+          setStatus(profileData.status);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
         }
       }
+    }
 
-      setLoading(false);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    // 1. Check current session immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleAuthStateChange('INITIAL_SESSION', session);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // 2. Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      handleAuthStateChange(event, session);
     });
 
     return () => {
