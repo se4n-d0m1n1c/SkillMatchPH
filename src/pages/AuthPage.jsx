@@ -17,9 +17,23 @@ const AuthPage = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="branding-content"
           >
-            <div className="logo-wrapper">
-              <span className="logo-icon">🚀</span>
-              <h1 className="brand-name">SkillMatchPH</h1>
+            <div className="logo-wrapper" style={{ marginBottom: '3rem' }}>
+              <svg viewBox="0 0 440 90" width="280" height="57" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="gd_auth" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#7C3AED"/>
+                    <stop offset="100%" stop-color="#06B6D4"/>
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="90" height="90" rx="20" fill="url(#gd_auth)"/>
+                <path d="M22,70 C30,40 60,56 68,22" stroke="white" stroke-width="2.5" fill="none" opacity="0.3" stroke-linecap="round"/>
+                <circle cx="22" cy="70" r="7.5" fill="white"/>
+                <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
+                <circle cx="68" cy="22" r="10" fill="white"/>
+                <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
+                <text x="110" y="56" font-family="Inter, -apple-system, sans-serif" font-size="46" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="30" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
+                <text x="111" y="76" font-family="Inter, -apple-system, sans-serif" font-size="13" fill="rgba(255,255,255,0.36)" letter-spacing="0.2">Career Pathing for Senior High</text>
+              </svg>
             </div>
             <h2 className="tagline">Find your path.<br />Define your future.</h2>
             <p className="description">

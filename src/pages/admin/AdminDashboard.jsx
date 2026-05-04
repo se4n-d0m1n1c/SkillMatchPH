@@ -147,10 +147,10 @@ const AdminDashboard = () => {
   }));
 
   return (
-    <div className="admin-dashboard">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+    <div className="admin-page">
+      <header className="page-header">
         <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Dashboard Overview</h1>
+          <h1 style={{ marginBottom: '0.5rem' }}>Dashboard Overview</h1>
           <p style={{ color: 'var(--text-secondary)' }}>
             {error
               ? 'Failed to load data — check your connection.'
@@ -184,7 +184,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Lower section ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div className="admin-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
 
         {/* Recent signups */}
         <div className="glass-card">

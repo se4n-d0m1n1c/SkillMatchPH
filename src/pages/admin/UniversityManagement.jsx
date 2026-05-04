@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useDeferredValue, memo } from 'react';
+import React, { useState, useMemo, useCallback, useDeferredValue, memo, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building, Plus, Search, Edit2, Trash2, X,
@@ -38,9 +38,10 @@ const fetchManagementData = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
+const UniversityCard = memo(forwardRef(({ university, onEdit, onDelete, index }, ref) => {
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -83,9 +84,9 @@ const UniversityCard = memo(({ university, onEdit, onDelete, index }) => {
       </div>
     </motion.div>
   );
-});
+}));
 
-const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
+const UniversityModal = memo(forwardRef(({ university, programs, onClose, onSave }, ref) => {
   // Use lazy state initialization to prevent object recreation on every modal render (rerender-lazy-state-init)
   const [formData, setFormData] = useState(() => university || INITIAL_UNI_FORM);
   const [isSaving, setIsSaving] = useState(false);
@@ -115,6 +116,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -129,14 +131,13 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
         exit={{ scale: 0.95, y: 20 }}
         className="glass-card modal-content"
         onClick={e => e.stopPropagation()}
-        style={{ padding: '2.5rem' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.75rem' }}>{university ? 'Edit University' : 'Add University'}</h2>
           <button onClick={onClose} className="icon-btn" aria-label="Close modal"><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleSubmit} className="modal-form-grid">
           <div className="form-group">
             <label htmlFor="uni-name">University Name</label>
             <input
@@ -148,7 +149,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label htmlFor="uni-location">Location</label>
             <input
               id="uni-location"
@@ -158,7 +159,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label htmlFor="uni-website">Website URL</label>
             <input
               id="uni-website"
@@ -169,7 +170,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label style={{ marginBottom: '0.25rem', display: 'block' }}>Linked Programs</label>
             <div
               role="group"
@@ -223,9 +224,9 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
             </div>
           ) : null}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button type="button" onClick={onClose} className="icon-btn" style={{ flex: 1, height: '45px', borderRadius: '12px', width: 'auto' }}>Cancel</button>
-            <button type="submit" disabled={isSaving} className="submit-btn" style={{ flex: 2, marginTop: 0 }}>
+          <div className="modal-footer" style={{ gridColumn: '1 / -1' }}>
+            <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
+            <button type="submit" disabled={isSaving} className="submit-btn">
               {isSaving ? <Loader2 className="animate-spin" /> : (university ? 'Save Changes' : 'Create University')}
             </button>
           </div>
@@ -233,7 +234,7 @@ const UniversityModal = memo(({ university, programs, onClose, onSave }) => {
       </motion.div>
     </motion.div>
   );
-});
+}));
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -309,9 +310,9 @@ const UniversityManagement = () => {
 
   return (
     <div className="admin-page">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+      <header className="page-header">
         <div>
-          <h1 style={{ fontSize: '3rem', margin: 0, lineHeight: 1 }}>University Management</h1>
+          <h1 style={{ margin: 0 }}>University Management</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 0', fontSize: '1.1rem' }}>
             Manage partner institutions and their program offerings.
           </p>
@@ -328,26 +329,28 @@ const UniversityManagement = () => {
       </header>
 
       {/* Toolbar */}
-      <div className="glass-card" style={{ marginBottom: '3rem', padding: '1.25rem 1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px', maxWidth: '500px' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input
-            id="uni-search"
-            type="text"
-            placeholder="Search universities..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem 0.85rem 3.5rem',
-              background: 'rgba(0,0,0,0.2)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '12px',
-              color: '#fff',
-              fontSize: '0.95rem',
-              outline: 'none'
-            }}
-          />
+      <div className="search-container" style={{ marginBottom: '3rem' }}>
+        <div className="glass-card" style={{ padding: '1.25rem 1.5rem', display: 'flex', gap: '1rem', borderRadius: '20px', maxWidth: '500px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input
+              id="uni-search"
+              type="text"
+              placeholder="Search universities..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem 0.85rem 3.5rem',
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '12px',
+                color: '#fff',
+                fontSize: '0.95rem',
+                outline: 'none'
+              }}
+            />
+          </div>
         </div>
       </div>
 

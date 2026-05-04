@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo, forwardRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, Edit, Trash2, RefreshCw, X, Save, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,7 +47,7 @@ const fetchStudents = async () => {
 
 // ─── Sub-components (rerender-no-inline-components) ──────────────────────────
 
-const EditModal = memo(({ student, onClose, onSave }) => {
+const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
   const [form, setForm] = useState(() =>
     EDIT_FIELDS.reduce((acc, { key }) => {
       acc[key] = student[key] ?? '';
@@ -90,24 +90,14 @@ const EditModal = memo(({ student, onClose, onSave }) => {
   };
 
   return (
-    <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Edit student">
+    <div ref={ref} style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Edit student">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--bg-deep, #0d0d14)',
-          border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
-          borderRadius: '24px',
-          padding: '2.5rem',
-          width: '100%',
-          maxWidth: '520px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-        }}
+        className="glass-card modal-content"
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
@@ -121,7 +111,7 @@ const EditModal = memo(({ student, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} className="modal-form-grid">
           {EDIT_FIELDS.map(({ key, label, type, options }, idx) => (
             <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }} className="form-group">
               <label htmlFor={`edit-${key}`}>{label}</label>
@@ -145,7 +135,6 @@ const EditModal = memo(({ student, onClose, onSave }) => {
                   type={type}
                   value={form[key]}
                   onChange={(e) => handleChange(key, e.target.value)}
-                  style={{ width: '100%' }}
                 />
               )}
             </div>
@@ -157,15 +146,12 @@ const EditModal = memo(({ student, onClose, onSave }) => {
             </p>
           )}
 
-          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-            <button type="button" onClick={onClose} className="icon-btn" style={{ height: '45px', width: 'auto', padding: '0 1.5rem', borderRadius: '12px' }}>
-              Cancel
-            </button>
+          <div className="modal-footer" style={{ gridColumn: '1 / -1' }}>
+            <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
             <button
               type="submit"
               disabled={saving}
               className="submit-btn"
-              style={{ flex: 1, marginTop: 0 }}
             >
               {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
               {saving ? 'Saving…' : 'Save Changes'}
@@ -175,9 +161,9 @@ const EditModal = memo(({ student, onClose, onSave }) => {
       </motion.div>
     </div>
   );
-});
+}));
 
-const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting }) => {
+const DeleteConfirmationModal = memo(forwardRef(({ student, onClose, onConfirm, isDeleting }, ref) => {
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
@@ -185,7 +171,7 @@ const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting 
   }, [onClose]);
 
   return (
-    <div style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
+    <div ref={ref} style={MODAL_OVERLAY_STYLE} onClick={onClose} role="dialog" aria-modal="true" aria-label="Confirm deletion">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -257,11 +243,11 @@ const DeleteConfirmationModal = memo(({ student, onClose, onConfirm, isDeleting 
       </motion.div>
     </div>
   );
-});
+}));
 
 const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
   return (
-    <div className="glass-card" style={{ padding: '0.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', width: '350px' }}>
+    <div className="glass-card" style={{ padding: '0.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', flex: 1 }}>
       <div style={{ position: 'relative', flex: 1 }}>
         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', opacity: value ? 1 : 0.5 }} />
         <input
@@ -376,14 +362,14 @@ const StudentManagement = () => {
 
   return (
     <div className="admin-page">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+      <header className="page-header">
         <div>
-          <h1 style={{ fontSize: '3rem', margin: 0, lineHeight: 1 }}>Student Management</h1>
+          <h1 style={{ margin: 0 }}>Student Management</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 0', fontSize: '1.1rem' }}>
             View and manage student profiles.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="search-container" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={() => mutate()} className="refresh-btn" title="Refresh list">
             <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
           </button>
