@@ -256,36 +256,84 @@
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* ── Form Groups ─────────────────────────────────────── */
+/* ── Form Groups & Modals ────────────────────────────── */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .form-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.form-group input,
-.form-group select,
+.form-group input, 
+.form-group select, 
 .form-group textarea {
-  padding: 0.8rem 1rem;
+  padding: 0.85rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: #fff;
   font-family: inherit;
-  transition: all 0.2s;
+  font-size: 0.95rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
   border-color: var(--accent-teal);
   background: rgba(255, 255, 255, 0.08);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.modal-footer .submit-btn {
+  margin-top: 0;
+  min-width: 160px;
+  height: 46px;
+  padding: 0 1.5rem;
+}
+
+.modal-footer .cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 0 1.5rem;
+  height: 46px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.modal-footer .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* ── Admin Grid ──────────────────────────────────────── */
@@ -350,6 +398,22 @@
 
   .modal-content {
     padding: 1.5rem !important;
+  }
+
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    margin-top: 1.5rem;
+  }
+
+  .modal-footer button, 
+  .modal-footer .cancel-btn {
+    width: 100%;
+    height: 48px;
   }
 }
 
