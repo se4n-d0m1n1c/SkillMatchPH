@@ -13,19 +13,18 @@ import { useAuth } from './context/AuthContext'
 import StudentLayout from './components/student/StudentLayout'
 import StudentProfile from './pages/student/StudentProfile'
 import Programs from './pages/student/Programs'
-import './App.css'
 
 function App() {
   const { user, role, status, loading } = useAuth();
 
   return (
-    <div className="app">
+    <div className="w-full min-h-screen">
       <Routes>
         {/* Public Route */}
         <Route path="/" element={!user ? <AuthPage /> : (
           (loading && !role) ? (
-            <div className="loading-screen">
-              <div className="loader"></div>
+            <div className="w-screen h-screen bg-[#0a0a0a] flex items-center justify-center fixed top-0 left-0 z-[9999]">
+              <div className="w-12 h-12 border-4 border-accent-teal/10 border-l-accent-teal rounded-full animate-spin"></div>
             </div>
           ) : (
             role === 'admin' ? <Navigate to="/admin" replace /> : (
