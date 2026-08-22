@@ -21,11 +21,9 @@ const INITIAL_FORM = {
 };
 
 const AuthForm = ({ isLogin, toggleForm }) => {
-  const { signIn, signUp, verifyOtp } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState(INITIAL_FORM);
 
   // Derived state — no useEffect needed (rerender-derived-state-no-effect)
@@ -63,23 +61,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
           shsStrand: formData.shsStrand,
         });
         if (error) throw error;
-        setShowOtp(true);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await verifyOtp(formData.email, otp);
-      if (error) throw error;
-      // The onAuthStateChange listener in AuthContext will handle the session
     } catch (err) {
       setError(err.message);
     } finally {
@@ -93,61 +75,10 @@ const AuthForm = ({ isLogin, toggleForm }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.4 }}
-      className={`glass-card ${!isLogin && !showOtp ? 'signup-wide' : ''}`}
-      style={showOtp ? { maxWidth: '420px', margin: '0 auto', textAlign: 'center' } : {}}
+      className={`glass-card ${!isLogin ? 'signup-wide' : ''}`}
     >
       <AnimatePresence mode='wait'>
-        {showOtp ? (
-          <motion.div
-            key="otp-view"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-          >
-            <div className="form-header" style={{ marginBottom: '2rem' }}>
-              <h3>Verify your email</h3>
-              <p>We've sent a verification code to<br /><strong>{formData.email}</strong></p>
-            </div>
-
-            <form onSubmit={handleVerify} className="auth-form">
-              <div className="input-group">
-                <Hash className="input-icon" size={18} />
-                <input
-                  type="text"
-                  placeholder="Enter verification code"
-                  required
-                  maxLength={8}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  style={{ textAlign: 'center', letterSpacing: '0.4rem', fontSize: '1.25rem' }}
-                />
-              </div>
-
-              {error ? <p className="error-message">{error}</p> : null}
-
-              <button type="submit" className="submit-btn full-width" disabled={loading || otp.length < 6}>
-                {loading ? <Loader2 className="animate-spin" size={18} /> : (
-                  <>
-                    Verify Account
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="toggle-auth" style={{ marginTop: '2rem' }}>
-              Didn't receive a code?{' '}
-              <button
-                onClick={() => setShowOtp(false)}
-                className="toggle-link"
-                style={{ fontSize: '0.875rem' }}
-              >
-                Back to Sign Up
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
+        <motion.div
             key="auth-view"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -238,8 +169,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
                 {isLogin ? 'Sign Up' : 'Log In'}
               </button>
             </div>
-          </motion.div>
-        )}
+        </motion.div>
       </AnimatePresence>
     </motion.div>
   );
