@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,21 @@ const DASHBOARD_CARDS = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [hollandCode, setHollandCode] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`skillmatch_assessment_${user?.id || 'guest'}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.hollandCode) {
+          setHollandCode(parsed.hollandCode);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [user?.id]);
 
   // Derive name safely from split fields (bug fix: was using full_name)
   const firstName = user?.user_metadata?.first_name;
@@ -23,11 +39,13 @@ const Dashboard = () => {
       navigate('/dashboard/profile');
     } else if (title === 'Programs') {
       navigate('/dashboard/programs');
+    } else if (title === 'Career Assessment') {
+      navigate('/dashboard/assessment');
     }
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="student-page dashboard-container">
 
       <main>
         <motion.div
@@ -59,6 +77,25 @@ const Dashboard = () => {
               <div style={{ color: 'var(--accent-teal)', marginBottom: '1rem' }}>{card.icon}</div>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{card.title}</h3>
               <p style={{ color: 'var(--text-secondary)' }}>{card.desc}</p>
+              {card.title === 'Career Assessment' && hollandCode && (
+                <div style={{ marginTop: '1rem' }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 245, 255, 0.15)',
+                    border: '1px solid rgba(0, 245, 255, 0.3)',
+                    color: 'var(--accent-teal)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    fontFamily: 'monospace'
+                  }}>
+                    Code: {hollandCode} • Completed
+                  </span>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

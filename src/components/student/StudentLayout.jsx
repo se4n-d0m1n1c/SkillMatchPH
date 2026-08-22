@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Menu, X, LayoutDashboard, User, LogOut } from 'lucide-react';
+import { GraduationCap, Menu, X, LayoutDashboard, User, LogOut, Target } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Hoisted navigation map to avoid recreating on each render (rendering-hoist-jsx)
 const NAV_LINKS = [
   { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+  { path: '/dashboard/assessment', label: 'Assessment', icon: <Target size={18} /> },
   { path: '/dashboard/programs', label: 'Programs', icon: <GraduationCap size={18} /> },
   { path: '/dashboard/profile', label: 'Profile', icon: <User size={18} /> },
 ];

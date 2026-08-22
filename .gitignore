@@ -1,2 +1,5 @@
 node_modules
-.env.local
+# Local environment files may contain API keys and other credentials.
+.env
+.env.*
+!.env.example

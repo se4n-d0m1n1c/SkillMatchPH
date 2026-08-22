@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope, Loader2, Server, Cpu, Bot, Pill, Activity, Radiation, TestTube, Wrench, Zap, Radio, Factory, FlaskConical, Calculator, Coins, Megaphone, Lightbulb, Utensils, GraduationCap, BookOpen, Dna, Palette, X, MapPin, Globe, ExternalLink } from 'lucide-react';
+import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope, Loader2, Server, Cpu, Bot, Pill, Activity, Radiation, TestTube, Wrench, Zap, Radio, Factory, FlaskConical, Calculator, Coins, Megaphone, Lightbulb, Utensils, GraduationCap, BookOpen, Dna, Palette, X, MapPin, Globe, ExternalLink, Navigation } from 'lucide-react';
 import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { calculateLocationProximity, getSavedPinnedLocation } from '../../data/locationsData';
 
 // 1. Hoist static data outside component to avoid recreation (rendering-hoist-jsx)
 const CATEGORIES = ['All', 'Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
@@ -196,9 +198,12 @@ const ProgramDetailsModal = ({ program, onClose }) => {
 };
 
 const Programs = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [onlyNearby, setOnlyNearby] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
+  const pinnedLocation = getSavedPinnedLocation(user?.id);
 
   // 4. Client-side deduplication and caching using SWR (client-swr-dedup)
   const { data: programs, error, isLoading } = useSWR('programs_list', fetchPrograms, {
@@ -217,16 +222,24 @@ const Programs = () => {
       const matchesCategory = activeCategory === 'All' || program.category === activeCategory;
       if (!matchesCategory) return false;
       
+      // Proximity check if onlyNearby is enabled
+      if (onlyNearby) {
+        const hasNearby = (program.universities || []).some(u => 
+          calculateLocationProximity(pinnedLocation, u.location, u.name).isNearby
+        );
+        if (!hasNearby) return false;
+      }
+
       // js-early-exit: If no search query, skip expensive string matching
       if (!searchLower) return true;
 
       return program.title.toLowerCase().includes(searchLower) || 
              program.description.toLowerCase().includes(searchLower);
     });
-  }, [searchQuery, activeCategory, programs]);
+  }, [searchQuery, activeCategory, onlyNearby, pinnedLocation, programs]);
 
   return (
-    <div style={{ padding: '2rem 0' }}>
+    <div className="student-page" style={{ padding: '2rem 0' }}>
       
       {/* Header Section */}
       <motion.div
@@ -269,8 +282,8 @@ const Programs = () => {
           />
         </div>
 
-        {/* Category Pills */}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Category Pills & Location Filter */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {CATEGORIES.map(category => (
             <button
               key={category}
@@ -289,6 +302,27 @@ const Programs = () => {
               {category}
             </button>
           ))}
+
+          <button
+            onClick={() => setOnlyNearby(!onlyNearby)}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '999px',
+              border: `1px solid ${onlyNearby ? 'var(--accent-teal)' : 'var(--glass-border)'}`,
+              background: onlyNearby ? 'rgba(0, 242, 254, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+              color: onlyNearby ? 'var(--accent-teal)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontSize: '0.9rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontWeight: onlyNearby ? 600 : 400
+            }}
+          >
+            <Navigation size={14} />
+            {onlyNearby ? `Near Me (${(pinnedLocation.address || '').split(',')[0]})` : 'Filter Near Me'}
+          </button>
         </div>
       </motion.div>
 
@@ -322,46 +356,69 @@ const Programs = () => {
               <p style={{ color: '#ff4d4d', fontSize: '1.2rem' }}>Failed to load programs. Please try again.</p>
             </motion.div>
           ) : filteredPrograms.length > 0 ? (
-            filteredPrograms.map((program) => (
-              <motion.div
-                key={program.id}
-                layout
-                variants={CARD_VARIANTS}
-                initial="hidden"
-                animate="show"
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="glass-card"
-                whileHover={{ translateY: -5, borderColor: 'var(--accent-teal)' }}
-                style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ 
-                    padding: '0.75rem', 
-                    borderRadius: '12px', 
-                    background: 'rgba(0, 242, 254, 0.1)',
-                    color: 'var(--accent-teal)'
-                  }}>
-                    {ICON_MAP[program.icon_name] || <Code size={24} />}
+            filteredPrograms.map((program) => {
+              const nearbyUnis = (program.universities || []).filter(u => 
+                calculateLocationProximity(pinnedLocation, u.location, u.name).isNearby
+              );
+              const isNearby = nearbyUnis.length > 0;
+
+              return (
+                <motion.div
+                  key={program.id}
+                  layout
+                  variants={CARD_VARIANTS}
+                  initial="hidden"
+                  animate="show"
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="glass-card"
+                  whileHover={{ translateY: -5, borderColor: 'var(--accent-teal)' }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      borderRadius: '12px', 
+                      background: 'rgba(0, 242, 254, 0.1)',
+                      color: 'var(--accent-teal)'
+                    }}>
+                      {ICON_MAP[program.icon_name] || <Code size={24} />}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      {isNearby && (
+                        <span style={{
+                          fontSize: '0.7rem',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '999px',
+                          background: 'rgba(74, 222, 128, 0.15)',
+                          color: '#4ade80',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.2rem'
+                        }}>
+                          <MapPin size={10} /> Near You
+                        </span>
+                      )}
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        padding: '0.25rem 0.75rem', 
+                        borderRadius: '999px',
+                        background: 'var(--glass-border)',
+                        color: 'var(--text-secondary)'
+                      }}>
+                        {program.category}
+                      </span>
+                    </div>
                   </div>
-                  <span style={{ 
-                    fontSize: '0.75rem', 
-                    padding: '0.25rem 0.75rem', 
-                    borderRadius: '999px',
-                    background: 'var(--glass-border)',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    {program.category}
-                  </span>
-                </div>
-                
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                    {program.title}
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
-                    {program.description}
-                  </p>
-                </div>
+                  
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                      {program.title}
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
+                      {program.description}
+                    </p>
+                  </div>
                 
                 <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
                   <motion.button 
@@ -383,7 +440,8 @@ const Programs = () => {
                   </motion.button>
                 </div>
               </motion.div>
-            ))
+            );
+          })
           ) : (
             <motion.div 
               initial={{ opacity: 0 }} 
