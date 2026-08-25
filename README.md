@@ -38,6 +38,14 @@ SkillMatchPH is a career pathing application designed for senior high school stu
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
+4. **Set up the database:**
+   Run [supabase/schema.sql](supabase/schema.sql) in the Supabase SQL Editor, then run
+   [supabase/seed_top_ph_universities.sql](supabase/seed_top_ph_universities.sql) and
+   [supabase/assessment_schema.sql](supabase/assessment_schema.sql). The last script creates
+   the versioned assessment tables, seeds the current questions, and enables server-side scoring.
+   To activate the expanded 30-item RIASEC inventory, run
+   [supabase/assessment_v2_riasec.sql](supabase/assessment_v2_riasec.sql) afterwards.
+
 ### Running Locally
 
 To start the development server:
@@ -73,4 +81,3 @@ The application will be available at `http://localhost:5173`.
 - `src/context`: React Context providers (Auth, etc.).
 - `src/lib`: Third-party library configurations (Supabase client).
 - `src/styles`: CSS modules and global styles.
-

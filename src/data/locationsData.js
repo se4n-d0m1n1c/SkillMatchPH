@@ -132,7 +132,7 @@ export function calculateLocationProximity(userLocObjOrStr, universityLocationSt
         distanceText: `${distanceKm} km away`,
         commuteEstimate: '~25–40 mins commute',
         label: `📍 Within City Area (${distanceKm} km)`,
-        isNearby: true,
+        isNearby: false,
         badgeColor: '#00f5ff'
       };
     } else if (distanceKm <= 50) {
@@ -143,7 +143,7 @@ export function calculateLocationProximity(userLocObjOrStr, universityLocationSt
         distanceText: `${distanceKm} km away`,
         commuteEstimate: '~1 hr travel',
         label: `📍 Regional (${distanceKm} km)`,
-        isNearby: true,
+        isNearby: false,
         badgeColor: '#fbbf24'
       };
     } else {
@@ -177,7 +177,7 @@ export function calculateLocationProximity(userLocObjOrStr, universityLocationSt
       distanceText: '~8 km away',
       commuteEstimate: '~25 mins',
       label: 'In Your City Area',
-      isNearby: true,
+      isNearby: false,
       badgeColor: '#4ade80'
     };
   }

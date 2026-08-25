@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import AdminNotifications from './AdminNotifications';
 import '../../styles/Admin.css';
 
 const AdminLayout = ({ children }) => {
@@ -29,7 +30,7 @@ const AdminLayout = ({ children }) => {
     { icon: <Users size={20} />, label: 'Students', path: '/admin/students' },
     { icon: <Building size={20} />, label: 'Universities', path: '/admin/universities' },
     { icon: <BookOpen size={20} />, label: 'Programs', path: '/admin/programs' },
-    { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
+    { icon: <UserPlus size={20} />, label: 'Admin Invites', path: '/admin/invites' },
   ];
 
   return (
@@ -56,7 +57,7 @@ const AdminLayout = ({ children }) => {
           <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
           <circle cx="68" cy="22" r="10" fill="white"/>
           <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
-          <text x="110" y="60" font-family="Inter, -apple-system, sans-serif" font-size="44" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="28" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
+          <text className="brand-logo-text" x="110" y="60" fontFamily="Inter, -apple-system, sans-serif" fontSize="44" fontWeight="700" letterSpacing="-1">SkillMatch<tspan fill="var(--accent-teal)" fontSize="28" fontWeight="600" dy="-8" letterSpacing="0">PH</tspan></text>
         </svg>
       </header>
 
@@ -84,7 +85,7 @@ const AdminLayout = ({ children }) => {
               <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
               <circle cx="68" cy="22" r="10" fill="white"/>
               <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
-              <text x="110" y="60" font-family="Inter, -apple-system, sans-serif" font-size="44" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="28" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
+              <text className="brand-logo-text" x="110" y="60" fontFamily="Inter, -apple-system, sans-serif" fontSize="44" fontWeight="700" letterSpacing="-1">SkillMatch<tspan fill="var(--accent-teal)" fontSize="28" fontWeight="600" dy="-8" letterSpacing="0">PH</tspan></text>
             </svg>
           </div>
           <button 
@@ -123,6 +124,9 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       <main className="admin-main">
+        <div className="admin-topbar">
+          <AdminNotifications />
+        </div>
         {children}
       </main>
     </div>

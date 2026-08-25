@@ -35,8 +35,8 @@ const StudentLayout = ({ children }) => {
                 gap: '0.5rem',
                 padding: '0.5rem 1rem',
                 borderRadius: '8px',
-                color: isActive ? '#fff' : 'var(--text-secondary)',
-                background: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                background: isActive ? 'var(--field-bg-hover)' : 'transparent',
                 textDecoration: 'none',
                 transition: 'all 0.2s ease',
               }}
@@ -96,7 +96,7 @@ const StudentLayout = ({ children }) => {
                 <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
                 <circle cx="68" cy="22" r="10" fill="white"/>
                 <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
-                <text x="110" y="60" font-family="Inter, -apple-system, sans-serif" font-size="44" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="28" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
+                <text className="brand-logo-text" x="110" y="60" fontFamily="Inter, -apple-system, sans-serif" fontSize="44" fontWeight="700" letterSpacing="-1">SkillMatch<tspan fill="var(--accent-teal)" fontSize="28" fontWeight="600" dy="-8" letterSpacing="0">PH</tspan></text>
               </svg>
             </Link>
           </motion.div>

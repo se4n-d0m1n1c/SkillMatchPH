@@ -37,8 +37,8 @@ const fetchDashboardData = async () => {
 
 const STAT_CONFIG = [
   { key: 'total',         label: 'Total Students',    icon: Users,         color: 'var(--accent-teal)'   },
-  { key: 'approved',      label: 'Approved Students', icon: CheckCircle,   color: '#4ade80'               },
-  { key: 'pending',       label: 'Pending Reviews',   icon: AlertCircle,   color: '#fbbf24'               },
+  { key: 'approved',      label: 'Approved Students', icon: CheckCircle,   color: 'var(--success)'         },
+  { key: 'pending',       label: 'Pending Reviews',   icon: AlertCircle,   color: 'var(--warning)'         },
   { key: 'totalPrograms', label: 'Total Programs',    icon: BookOpen,      color: 'var(--accent-violet)'  },
 ];
 
@@ -222,8 +222,8 @@ const AdminDashboard = () => {
           ) : (
             <>
               {[
-                { label: 'Approved', count: data?.approved ?? 0, color: '#4ade80' },
-                { label: 'Pending',  count: data?.pending  ?? 0, color: '#fbbf24' },
+                { label: 'Approved', count: data?.approved ?? 0, color: 'var(--success)' },
+                { label: 'Pending',  count: data?.pending  ?? 0, color: 'var(--warning)' },
                 {
                   label: 'Rejected',
                   count: (data?.total ?? 0) - (data?.approved ?? 0) - (data?.pending ?? 0),

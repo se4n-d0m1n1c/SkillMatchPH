@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked, Target, ChevronRight, Award, MapPin, Crosshair } from 'lucide-react';
 import { getSavedPinnedLocation, savePinnedLocation } from '../../data/locationsData';
 import GrabLocationPickerModal from '../../components/common/GrabLocationPickerModal';
@@ -37,14 +38,40 @@ const StudentProfile = () => {
   const [showMapModal, setShowMapModal] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`skillmatch_assessment_${user?.id || 'guest'}`);
-      if (raw) {
-        setAssessmentData(JSON.parse(raw));
+    let isCurrent = true;
+    setAssessmentData(null);
+
+    const loadAssessment = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('assessment_attempts')
+          .select('result, completed_at')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data?.result?.code && isCurrent) {
+          setAssessmentData({
+            ...data.result,
+            hollandCode: data.result.code,
+            savedAt: data.completed_at
+          });
+          return;
+        }
       }
-    } catch {
-      // ignore
-    }
+
+      // Support assessments saved before database persistence was introduced.
+      try {
+        const raw = localStorage.getItem(`skillmatch_assessment_${user?.id || 'guest'}`);
+        if (raw && isCurrent) setAssessmentData(JSON.parse(raw));
+      } catch {
+        // ignore
+      }
+    };
+
+    loadAssessment();
+    return () => { isCurrent = false; };
   }, [user?.id]);
 
   const handleSelectPinnedLocation = (newLocObj) => {
@@ -129,8 +156,8 @@ const StudentProfile = () => {
                       {field.isStatus ? (
                         <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500, textTransform: 'capitalize' }}>
                           <span style={{
-                            color: value === 'approved' ? '#4ade80' : 
-                                   value === 'rejected' ? '#ff4d4d' : '#fbbf24'
+                            color: value === 'approved' ? 'var(--success)' :
+                                   value === 'rejected' ? 'var(--danger-text)' : 'var(--warning)'
                           }}>
                             {value || 'Unknown'}
                           </span>
@@ -178,7 +205,7 @@ const StudentProfile = () => {
                   </div>
                   <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {pinnedLocation.address || pinnedLocation.label}
-                    <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.5rem', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.5rem', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.15)', color: 'var(--success)', fontWeight: 700 }}>
                       📍 GPS Pin Active
                     </span>
                   </p>
@@ -225,7 +252,7 @@ const StudentProfile = () => {
               )}
             </div>
 
-            <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
               {assessmentData?.hollandCode
                 ? `You have completed the assessment. Your occupational profile is mapped to ${assessmentData.hollandCode}. View your certificate of rating and personalized program matches anytime.`
                 : 'Take our 5-minute dual-engine assessment to discover your top Philippine college program matches based on your vocational interests and scholastic aptitude.'}
@@ -239,7 +266,7 @@ const StudentProfile = () => {
                 gap: '0.5rem',
                 padding: '0.65rem 1.25rem',
                 borderRadius: '10px',
-                background: 'linear-gradient(135deg, var(--accent-teal), var(--accent-violet))',
+                background: 'var(--primary-action-bg)',
                 color: '#fff',
                 textDecoration: 'none',
                 fontWeight: 600,

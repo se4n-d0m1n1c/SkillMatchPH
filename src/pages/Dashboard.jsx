@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { GraduationCap, Target, User } from 'lucide-react';
 
 // Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
@@ -17,17 +18,37 @@ const Dashboard = () => {
   const [hollandCode, setHollandCode] = useState(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`skillmatch_assessment_${user?.id || 'guest'}`);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.hollandCode) {
-          setHollandCode(parsed.hollandCode);
+    let isCurrent = true;
+    setHollandCode(null);
+
+    const loadAssessmentStatus = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('assessment_attempts')
+          .select('result')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data?.result?.code && isCurrent) {
+          setHollandCode(data.result.code);
+          return;
         }
       }
-    } catch {
-      // ignore
-    }
+
+      // Support assessment results saved before database persistence was introduced.
+      try {
+        const raw = localStorage.getItem(`skillmatch_assessment_${user?.id || 'guest'}`);
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (parsed?.hollandCode && isCurrent) setHollandCode(parsed.hollandCode);
+      } catch {
+        // ignore
+      }
+    };
+
+    loadAssessmentStatus();
+    return () => { isCurrent = false; };
   }, [user?.id]);
 
   // Derive name safely from split fields (bug fix: was using full_name)

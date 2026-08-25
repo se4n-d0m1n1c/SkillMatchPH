@@ -31,8 +31,8 @@ const AuthPage = () => {
                 <circle cx="45" cy="49" r="5.5" fill="white" opacity="0.65"/>
                 <circle cx="68" cy="22" r="10" fill="white"/>
                 <circle cx="68" cy="22" r="16" stroke="white" stroke-width="1.5" fill="none" opacity="0.18"/>
-                <text x="110" y="56" font-family="Inter, -apple-system, sans-serif" font-size="46" font-weight="700" fill="white" letter-spacing="-1">SkillMatch<tspan fill="#06B6D4" font-size="30" font-weight="600" dy="-8" letter-spacing="0">PH</tspan></text>
-                <text x="111" y="76" font-family="Inter, -apple-system, sans-serif" font-size="13" fill="rgba(255,255,255,0.36)" letter-spacing="0.2">Career Pathing for Senior High</text>
+                <text className="brand-logo-text" x="110" y="56" fontFamily="Inter, -apple-system, sans-serif" fontSize="46" fontWeight="700" letterSpacing="-1">SkillMatch<tspan fill="var(--accent-teal)" fontSize="30" fontWeight="600" dy="-8" letterSpacing="0">PH</tspan></text>
+                <text x="111" y="76" fontFamily="Inter, -apple-system, sans-serif" fontSize="13" fill="var(--text-secondary)" letterSpacing="0.2">Career Pathing for Senior High</text>
               </svg>
             </div>
             <h2 className="tagline">Find your path.<br />Define your future.</h2>

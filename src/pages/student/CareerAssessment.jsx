@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import useSWR from 'swr';
@@ -27,12 +27,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { 
-  RIASEC_QUESTIONS, 
   LIKERT_OPTIONS, 
-  APTITUDE_QUESTIONS, 
   DOMAIN_METADATA, 
   RIASEC_TRAITS, 
-  computeScores, 
   matchPrograms 
 } from '../../data/assessmentData';
 import { 
@@ -62,6 +59,34 @@ const fetchProgramsCatalog = async () => {
   }));
 };
 
+const fetchAssessmentQuestions = async () => {
+  const { data, error } = await supabase.rpc('get_active_assessment_questions');
+  if (error) throw error;
+
+  return data.map(question => ({
+    id: question.question_id,
+    versionId: question.version_id,
+    section: question.section,
+    sequence: question.sequence,
+    text: question.prompt,
+    letter: question.riasec_letter,
+    domain: question.aptitude_domain,
+    options: question.options
+  }));
+};
+
+const fetchLatestAssessmentAttempt = async () => {
+  const { data, error } = await supabase
+    .from('assessment_attempts')
+    .select('interest_answers, aptitude_answers, result, completed_at')
+    .order('completed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
 const CONTAINER_ANIM = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
@@ -77,16 +102,38 @@ export default function CareerAssessment() {
   const [aIndex, setAIndex] = useState(0);
   const [interestAnswers, setInterestAnswers] = useState({});
   const [aptitudeAnswers, setAptitudeAnswers] = useState({});
+  const [scoreResults, setScoreResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [resultsTab, setResultsTab] = useState('programs'); // 'programs' | 'universities'
   const [pinnedLocation, setPinnedLocation] = useState(() => getSavedPinnedLocation(user?.id));
   const [onlyNearby, setOnlyNearby] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
+  const hasRestoredAttempt = useRef(false);
 
   // Load programs catalog with SWR
   const { data: catalogPrograms } = useSWR('programs_list', fetchProgramsCatalog, {
     revalidateOnFocus: false
   });
+  const { data: assessmentQuestions, error: assessmentQuestionsError, isLoading: isLoadingAssessment } = useSWR(
+    'active_assessment_questions',
+    fetchAssessmentQuestions,
+    { revalidateOnFocus: false }
+  );
+  const { data: latestAssessmentAttempt } = useSWR(
+    user?.id ? ['latest_assessment_attempt', user.id] : null,
+    fetchLatestAssessmentAttempt,
+    { revalidateOnFocus: false }
+  );
+  const interestQuestions = useMemo(
+    () => (assessmentQuestions || []).filter(question => question.section === 'interest'),
+    [assessmentQuestions]
+  );
+  const aptitudeQuestions = useMemo(
+    () => (assessmentQuestions || []).filter(question => question.section === 'aptitude'),
+    [assessmentQuestions]
+  );
+  const assessmentVersionId = assessmentQuestions?.[0]?.versionId;
 
   // Restore saved assessment results on mount if available
   useEffect(() => {
@@ -94,10 +141,12 @@ export default function CareerAssessment() {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.interestAnswers && parsed.aptitudeAnswers) {
+        if (parsed.interestAnswers && parsed.aptitudeAnswers && parsed.scoreResults) {
           setInterestAnswers(parsed.interestAnswers);
           setAptitudeAnswers(parsed.aptitudeAnswers);
+          setScoreResults(parsed.scoreResults);
           setPhase('results');
+          hasRestoredAttempt.current = true;
         }
       }
     } catch {
@@ -105,17 +154,22 @@ export default function CareerAssessment() {
     }
   }, [storageKey]);
 
+  // Database persistence is the fallback when local storage is unavailable or was cleared.
+  useEffect(() => {
+    if (!latestAssessmentAttempt || hasRestoredAttempt.current || phase !== 'intro') return;
+
+    setInterestAnswers(latestAssessmentAttempt.interest_answers);
+    setAptitudeAnswers(latestAssessmentAttempt.aptitude_answers);
+    setScoreResults(latestAssessmentAttempt.result);
+    setPhase('results');
+    hasRestoredAttempt.current = true;
+  }, [latestAssessmentAttempt, phase]);
+
   // Handle location selection from Grab-style map modal
   const handleSelectPinnedLocation = (newLocObj) => {
     setPinnedLocation(newLocObj);
     savePinnedLocation(user?.id, newLocObj);
   };
-
-  // Derived computed scores
-  const scoreResults = useMemo(() => {
-    if (Object.keys(interestAnswers).length === 0) return null;
-    return computeScores(interestAnswers, aptitudeAnswers);
-  }, [interestAnswers, aptitudeAnswers]);
 
   // Derived ranked program recommendations with exact distance
   const rankedPrograms = useMemo(() => {
@@ -210,8 +264,16 @@ export default function CareerAssessment() {
   }, [recommendedUniversities, onlyNearby]);
 
   const handleStartTest = () => {
+    if (isLoadingAssessment || !assessmentVersionId || interestQuestions.length === 0 || aptitudeQuestions.length === 0) {
+      setErrorMessage(assessmentQuestionsError
+        ? 'We could not load the assessment. Please refresh the page and try again.'
+        : 'The assessment is not available yet. Please try again shortly.');
+      return;
+    }
+    hasRestoredAttempt.current = true;
     setInterestAnswers({});
     setAptitudeAnswers({});
+    setScoreResults(null);
     setQIndex(0);
     setAIndex(0);
     setErrorMessage('');
@@ -219,19 +281,19 @@ export default function CareerAssessment() {
   };
 
   const handleSelectInterest = (value) => {
-    const currentQ = RIASEC_QUESTIONS[qIndex];
+    const currentQ = interestQuestions[qIndex];
     setInterestAnswers(prev => ({ ...prev, [currentQ.id]: value }));
     setErrorMessage('');
   };
 
   const handleNextInterest = () => {
-    const currentQ = RIASEC_QUESTIONS[qIndex];
+    const currentQ = interestQuestions[qIndex];
     if (interestAnswers[currentQ.id] === undefined) {
       setErrorMessage('Please select an option to continue.');
       return;
     }
     setErrorMessage('');
-    if (qIndex < RIASEC_QUESTIONS.length - 1) {
+    if (qIndex < interestQuestions.length - 1) {
       setQIndex(prev => prev + 1);
     } else {
       setPhase('aptitude');
@@ -249,39 +311,48 @@ export default function CareerAssessment() {
   };
 
   const handleSelectAptitude = (optIndex) => {
-    const currentQ = APTITUDE_QUESTIONS[aIndex];
+    const currentQ = aptitudeQuestions[aIndex];
     setAptitudeAnswers(prev => ({ ...prev, [currentQ.id]: optIndex }));
     setErrorMessage('');
   };
 
-  const handleNextAptitude = () => {
-    const currentQ = APTITUDE_QUESTIONS[aIndex];
+  const handleNextAptitude = async () => {
+    const currentQ = aptitudeQuestions[aIndex];
     if (aptitudeAnswers[currentQ.id] === undefined) {
       setErrorMessage('Please select an answer to continue.');
       return;
     }
     setErrorMessage('');
-    if (aIndex < APTITUDE_QUESTIONS.length - 1) {
+    if (aIndex < aptitudeQuestions.length - 1) {
       setAIndex(prev => prev + 1);
     } else {
-      const finalScores = computeScores(interestAnswers, {
-        ...aptitudeAnswers,
-        [currentQ.id]: aptitudeAnswers[currentQ.id]
-      });
+      setIsSubmitting(true);
       try {
-        localStorage.setItem(storageKey, JSON.stringify({
-          interestAnswers,
-          aptitudeAnswers: {
-            ...aptitudeAnswers,
-            [currentQ.id]: aptitudeAnswers[currentQ.id]
-          },
-          savedAt: new Date().toISOString(),
-          hollandCode: finalScores.code
-        }));
-      } catch {
-        // quota fallback
+        const finalAptitudeAnswers = { ...aptitudeAnswers, [currentQ.id]: aptitudeAnswers[currentQ.id] };
+        const { data: result, error } = await supabase.rpc('submit_assessment_attempt', {
+          p_version_id: assessmentVersionId,
+          p_interest_answers: interestAnswers,
+          p_aptitude_answers: finalAptitudeAnswers
+        });
+        if (error) throw error;
+        setScoreResults(result);
+        setPhase('results');
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({
+            interestAnswers,
+            aptitudeAnswers: finalAptitudeAnswers,
+            scoreResults: result,
+            savedAt: new Date().toISOString(),
+            hollandCode: result.code
+          }));
+        } catch {
+          // The database attempt has already been saved; local storage is optional.
+        }
+      } catch (error) {
+        setErrorMessage(error.message || 'We could not score your assessment. Please try again.');
+      } finally {
+        setIsSubmitting(false);
       }
-      setPhase('results');
     }
   };
 
@@ -291,7 +362,7 @@ export default function CareerAssessment() {
       setAIndex(prev => prev - 1);
     } else {
       setPhase('interest');
-      setQIndex(RIASEC_QUESTIONS.length - 1);
+      setQIndex(interestQuestions.length - 1);
     }
   };
 
@@ -301,8 +372,10 @@ export default function CareerAssessment() {
     } catch {
       // ignore
     }
+    hasRestoredAttempt.current = true;
     setInterestAnswers({});
     setAptitudeAnswers({});
+    setScoreResults(null);
     setQIndex(0);
     setAIndex(0);
     setErrorMessage('');
@@ -375,7 +448,7 @@ export default function CareerAssessment() {
               <div>
                 <h2 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-primary)' }}>How it Works</h2>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  A dual-engine assessment with Grab-style location pinning to find the closest programs.
+                  A dual-engine assessment with location pinning to find the closest programs.
                 </p>
               </div>
             </div>
@@ -395,7 +468,7 @@ export default function CareerAssessment() {
                   <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Part 1: Interest Inventory</h3>
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                  <strong>12 quick statements</strong> assessing your interests across Realistic, Investigative, Artistic, Social, Enterprising, and Conventional archetypes.
+                  <strong>30 activity-preference statements</strong> assessing your interests across Realistic, Investigative, Artistic, Social, Enterprising, and Conventional archetypes.
                 </p>
               </div>
 
@@ -438,7 +511,7 @@ export default function CareerAssessment() {
             {/* Action */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Takes approximately <strong>4 – 5 minutes</strong>
+                Takes approximately <strong>6 – 8 minutes</strong>
               </div>
               <motion.button
                 onClick={handleStartTest}
@@ -489,7 +562,7 @@ export default function CareerAssessment() {
                   Section 1 of 2 — Interest Inventory
                 </span>
                 <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Question {qIndex + 1} of {RIASEC_QUESTIONS.length}
+                  Question {qIndex + 1} of {interestQuestions.length}
                 </span>
               </div>
               {/* Progress Bar */}
@@ -497,7 +570,7 @@ export default function CareerAssessment() {
                 <div 
                   style={{ 
                     height: '100%', 
-                    width: `${((qIndex + 1) / RIASEC_QUESTIONS.length) * 100}%`, 
+                    width: `${((qIndex + 1) / interestQuestions.length) * 100}%`,
                     background: 'linear-gradient(90deg, var(--accent-teal), var(--accent-violet))',
                     transition: 'width 0.3s ease'
                   }} 
@@ -523,7 +596,7 @@ export default function CareerAssessment() {
               </div>
 
               <h2 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.6rem)', fontWeight: 600, lineHeight: 1.4, margin: '0 0 2.5rem 0', color: 'var(--text-primary)' }}>
-                "{RIASEC_QUESTIONS[qIndex].text}"
+                "{interestQuestions[qIndex]?.text}"
               </h2>
 
               {/* Interactive Bubbles */}
@@ -535,7 +608,7 @@ export default function CareerAssessment() {
                 textAlign: 'center'
               }}>
                 {LIKERT_OPTIONS.map((opt) => {
-                  const isSelected = interestAnswers[RIASEC_QUESTIONS[qIndex].id] === opt.v;
+                  const isSelected = interestAnswers[interestQuestions[qIndex]?.id] === opt.v;
                   return (
                     <motion.div
                       key={opt.v}
@@ -635,7 +708,7 @@ export default function CareerAssessment() {
                   fontSize: '0.95rem'
                 }}
               >
-                {qIndex === RIASEC_QUESTIONS.length - 1 ? 'Proceed to Aptitude Screen' : 'Next Question'}
+                {qIndex === interestQuestions.length - 1 ? 'Proceed to Aptitude Screen' : 'Next Question'}
                 <ChevronRight size={18} />
               </motion.button>
             </div>
@@ -666,7 +739,7 @@ export default function CareerAssessment() {
                   Section 2 of 2 — Cognitive Reasoning Screen
                 </span>
                 <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Question {aIndex + 1} of {APTITUDE_QUESTIONS.length}
+                  Question {aIndex + 1} of {aptitudeQuestions.length}
                 </span>
               </div>
               {/* Progress Bar */}
@@ -674,7 +747,7 @@ export default function CareerAssessment() {
                 <div 
                   style={{ 
                     height: '100%', 
-                    width: `${((aIndex + 1) / APTITUDE_QUESTIONS.length) * 100}%`, 
+                    width: `${((aIndex + 1) / aptitudeQuestions.length) * 100}%`,
                     background: 'linear-gradient(90deg, var(--accent-violet), var(--accent-teal))',
                     transition: 'width 0.3s ease'
                   }} 
@@ -696,17 +769,17 @@ export default function CareerAssessment() {
                 marginBottom: '1rem'
               }}>
                 <BrainCircuit size={16} />
-                <span>{DOMAIN_METADATA[APTITUDE_QUESTIONS[aIndex].domain]?.label}</span>
+                <span>{DOMAIN_METADATA[aptitudeQuestions[aIndex]?.domain]?.label}</span>
               </div>
 
               <h2 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.6rem)', fontWeight: 600, lineHeight: 1.4, margin: '0 0 2rem 0', color: 'var(--text-primary)' }}>
-                {APTITUDE_QUESTIONS[aIndex].text}
+                {aptitudeQuestions[aIndex]?.text}
               </h2>
 
               {/* Multiple Choice Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', margin: '2rem 0' }}>
-                {APTITUDE_QUESTIONS[aIndex].options.map((opt, i) => {
-                  const isSelected = aptitudeAnswers[APTITUDE_QUESTIONS[aIndex].id] === i;
+                {(aptitudeQuestions[aIndex]?.options || []).map((opt, i) => {
+                  const isSelected = aptitudeAnswers[aptitudeQuestions[aIndex]?.id] === i;
                   return (
                     <motion.div
                       key={i}
@@ -779,6 +852,7 @@ export default function CareerAssessment() {
 
               <motion.button
                 onClick={handleNextAptitude}
+                disabled={isSubmitting}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 style={{
@@ -790,12 +864,13 @@ export default function CareerAssessment() {
                   border: 'none',
                   background: 'linear-gradient(135deg, var(--accent-teal), var(--accent-violet))',
                   color: '#fff',
-                  cursor: 'pointer',
+                  cursor: isSubmitting ? 'wait' : 'pointer',
+                  opacity: isSubmitting ? 0.7 : 1,
                   fontWeight: 600,
                   fontSize: '0.95rem'
                 }}
               >
-                {aIndex === APTITUDE_QUESTIONS.length - 1 ? 'View Your Results & Matches' : 'Next Question'}
+                {isSubmitting ? 'Scoring assessment…' : aIndex === aptitudeQuestions.length - 1 ? 'View Your Results & Matches' : 'Next Question'}
                 <ChevronRight size={18} />
               </motion.button>
             </div>
@@ -851,7 +926,7 @@ export default function CareerAssessment() {
                 
                 {/* RIASEC Profile Card */}
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
+                  background: 'var(--subtle-surface)',
                   border: '1px solid var(--glass-border)',
                   borderRadius: '16px',
                   padding: '1.5rem'
@@ -875,7 +950,7 @@ export default function CareerAssessment() {
                               {score}%
                             </span>
                           </div>
-                          <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '8px', background: 'var(--progress-track)', borderRadius: '4px', overflow: 'hidden' }}>
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${score}%` }}
@@ -895,7 +970,7 @@ export default function CareerAssessment() {
 
                 {/* Aptitude Screen Breakdown */}
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
+                  background: 'var(--subtle-surface)',
                   border: '1px solid var(--glass-border)',
                   borderRadius: '16px',
                   padding: '1.5rem'
@@ -917,22 +992,22 @@ export default function CareerAssessment() {
                             </span>
                             <span style={{ 
                               fontFamily: 'monospace', 
-                              color: isPrepared ? '#4ade80' : '#fbbf24', 
+                              color: isPrepared ? 'var(--success)' : 'var(--warning)',
                               fontWeight: 600 
                             }}>
                               {score}% {isPrepared ? '• Prepared' : '• Developing'}
                             </span>
                           </div>
-                          <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '8px', background: 'var(--progress-track)', borderRadius: '4px', overflow: 'hidden' }}>
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${score}%` }}
                               transition={{ duration: 0.8, ease: 'easeOut' }}
                               style={{
                                 height: '100%',
-                                background: isPrepared 
-                                  ? 'linear-gradient(90deg, #4ade80, var(--accent-teal))' 
-                                  : 'linear-gradient(90deg, #fbbf24, #f97316)',
+                                background: isPrepared
+                                  ? 'var(--success-gradient)'
+                                  : 'var(--warning-gradient)',
                                 borderRadius: '4px'
                               }}
                             />
@@ -977,9 +1052,9 @@ export default function CareerAssessment() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--accent-teal)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
-                      Pinned Exact Location (Grab-Style)
+                      Pinned Exact Location
                     </span>
-                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.2)', color: 'var(--success)', fontWeight: 700 }}>
                       Live GPS Pin
                     </span>
                   </div>
@@ -1001,7 +1076,7 @@ export default function CareerAssessment() {
                     borderRadius: '12px',
                     border: 'none',
                     background: 'var(--accent-teal)',
-                    color: '#0a0f1e',
+                    color: 'var(--on-accent)',
                     fontWeight: 700,
                     fontSize: '0.9rem',
                     cursor: 'pointer',
@@ -1020,7 +1095,7 @@ export default function CareerAssessment() {
                     padding: '0.65rem 1.1rem',
                     borderRadius: '12px',
                     border: `1px solid ${onlyNearby ? 'var(--accent-teal)' : 'var(--glass-border)'}`,
-                    background: onlyNearby ? 'rgba(0, 245, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                    background: onlyNearby ? 'rgba(0, 245, 255, 0.15)' : 'var(--field-bg)',
                     color: onlyNearby ? 'var(--accent-teal)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '0.9rem',
@@ -1051,7 +1126,7 @@ export default function CareerAssessment() {
               {/* View Switcher Tabs */}
               <div style={{
                 display: 'flex',
-                background: 'rgba(255, 255, 255, 0.04)',
+                background: 'var(--field-bg)',
                 border: '1px solid var(--glass-border)',
                 borderRadius: '12px',
                 padding: '4px'
@@ -1066,7 +1141,7 @@ export default function CareerAssessment() {
                     borderRadius: '8px',
                     border: 'none',
                     background: resultsTab === 'programs' ? 'var(--accent-teal)' : 'transparent',
-                    color: resultsTab === 'programs' ? '#0a0f1e' : 'var(--text-secondary)',
+                    color: resultsTab === 'programs' ? 'var(--on-accent)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '0.9rem',
                     cursor: 'pointer',
@@ -1085,7 +1160,7 @@ export default function CareerAssessment() {
                     borderRadius: '8px',
                     border: 'none',
                     background: resultsTab === 'universities' ? 'var(--accent-teal)' : 'transparent',
-                    color: resultsTab === 'universities' ? '#0a0f1e' : 'var(--text-secondary)',
+                    color: resultsTab === 'universities' ? 'var(--on-accent)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '0.9rem',
                     cursor: 'pointer',
@@ -1110,7 +1185,7 @@ export default function CareerAssessment() {
                     style={{
                       padding: '1.75rem',
                       borderRadius: '16px',
-                      background: idx === 0 ? 'rgba(0, 245, 255, 0.04)' : 'rgba(255, 255, 255, 0.02)',
+                      background: idx === 0 ? 'var(--result-card-highlight)' : 'var(--result-card-bg)',
                       border: `1px solid ${idx === 0 ? 'var(--accent-teal)' : 'var(--glass-border)'}`
                     }}
                   >
@@ -1125,7 +1200,7 @@ export default function CareerAssessment() {
                             fontSize: '0.75rem',
                             padding: '0.2rem 0.6rem',
                             borderRadius: '6px',
-                            background: 'rgba(255, 255, 255, 0.08)',
+                            background: 'var(--chip-bg)',
                             color: 'var(--text-secondary)'
                           }}>
                             Holland Code: {prog.code}
@@ -1148,7 +1223,7 @@ export default function CareerAssessment() {
                               padding: '0.2rem 0.6rem',
                               borderRadius: '6px',
                               background: 'rgba(74, 222, 128, 0.15)',
-                              color: '#4ade80',
+                              color: 'var(--success)',
                               fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -1158,7 +1233,7 @@ export default function CareerAssessment() {
                             </span>
                           )}
                         </div>
-                        <p style={{ margin: '0.6rem 0 0', fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.5 }}>
+                        <p style={{ margin: '0.6rem 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                           {prog.why}
                         </p>
                       </div>
@@ -1167,7 +1242,7 @@ export default function CareerAssessment() {
                         <span style={{ 
                           fontSize: '1.8rem', 
                           fontWeight: 800, 
-                          color: prog.match >= 75 ? '#4ade80' : prog.match >= 60 ? 'var(--accent-teal)' : '#fbbf24', 
+                          color: prog.match >= 75 ? 'var(--success)' : prog.match >= 60 ? 'var(--accent-teal)' : 'var(--warning)',
                           fontFamily: 'monospace' 
                         }}>
                           {prog.match}%
@@ -1184,16 +1259,16 @@ export default function CareerAssessment() {
                         marginTop: '1rem',
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        background: 'rgba(255, 77, 77, 0.08)',
-                        border: '1px solid rgba(255, 77, 77, 0.2)',
+                        background: 'var(--danger-bg)',
+                        border: '1px solid var(--danger-border)',
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '0.6rem',
                         fontSize: '0.85rem',
-                        color: '#fca5a5',
+                        color: 'var(--danger-text)',
                         lineHeight: 1.4
                       }}>
-                        <AlertTriangle size={16} color="#ff4d4d" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <AlertTriangle size={16} color="var(--danger-text)" style={{ flexShrink: 0, marginTop: '2px' }} />
                         <div>
                           <strong>Preparation Note:</strong> This program emphasizes{' '}
                           {prog.flags.map(f => DOMAIN_METADATA[f.d]?.label.toLowerCase()).join(' and ')}. Developing these competencies early in Senior High will boost your confidence.
@@ -1237,7 +1312,7 @@ export default function CareerAssessment() {
                                         padding: '0.1rem 0.35rem',
                                         borderRadius: '4px',
                                         background: prox.distanceKm <= 10 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(0, 245, 255, 0.2)',
-                                        color: prox.distanceKm <= 10 ? '#4ade80' : 'var(--accent-teal)',
+                                        color: prox.distanceKm <= 10 ? 'var(--success)' : 'var(--accent-teal)',
                                         fontWeight: 700
                                       }}>
                                         {prox.distanceKm} km
@@ -1341,7 +1416,7 @@ export default function CareerAssessment() {
                               padding: '0.25rem 0.65rem',
                               borderRadius: '8px',
                               background: uni.distanceKm <= 10 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(0, 245, 255, 0.2)',
-                              color: uni.distanceKm <= 10 ? '#4ade80' : 'var(--accent-teal)',
+                              color: uni.distanceKm <= 10 ? 'var(--success)' : 'var(--accent-teal)',
                               fontWeight: 800,
                               whiteSpace: 'nowrap',
                               display: 'inline-flex',
@@ -1381,7 +1456,7 @@ export default function CareerAssessment() {
                             >
                               <GraduationCap size={12} color="var(--accent-teal)" />
                               {p.name}
-                              <strong style={{ color: p.match >= 75 ? '#4ade80' : 'var(--accent-teal)', marginLeft: '2px' }}>
+                              <strong style={{ color: p.match >= 75 ? 'var(--success)' : 'var(--accent-teal)', marginLeft: '2px' }}>
                                 {p.match}%
                               </strong>
                             </span>

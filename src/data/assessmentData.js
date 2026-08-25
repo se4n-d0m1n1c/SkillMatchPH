@@ -1,86 +1,9 @@
-// RIASEC Interest Inventory Questions (12 items: 2 for each personality type)
-export const RIASEC_QUESTIONS = [
-  { id: 'r1', letter: 'R', text: 'I like taking things apart to see how they work, or building things with my hands.' },
-  { id: 'r2', letter: 'R', text: 'I would rather work with tools, machines, or the outdoors than sit at a desk all day.' },
-  { id: 'i1', letter: 'I', text: 'I enjoy figuring out why something happens, not just what happens.' },
-  { id: 'i2', letter: 'I', text: 'I like solving puzzles, running experiments, or working through a hard problem step by step.' },
-  { id: 'a1', letter: 'A', text: 'I like creating things — designs, writing, music, or visuals — that did not exist before.' },
-  { id: 'a2', letter: 'A', text: 'I prefer open-ended tasks with room for my own style, over tasks with one correct answer.' },
-  { id: 's1', letter: 'S', text: 'I like helping, teaching, or listening to people directly.' },
-  { id: 's2', letter: 'S', text: 'I feel most useful when I am working through a problem with or for other people.' },
-  { id: 'e1', letter: 'E', text: 'I like convincing people, leading a group, or pushing a plan forward.' },
-  { id: 'e2', letter: 'E', text: 'I would rather start and run something than follow a process someone else made.' },
-  { id: 'c1', letter: 'C', text: 'I like keeping things organized — records, schedules, numbers, or files.' },
-  { id: 'c2', letter: 'C', text: 'I prefer clear instructions and a defined process over figuring it out as I go.' }
-];
-
 export const LIKERT_OPTIONS = [
   { v: 1, label: 'Not like me', shortLabel: '1' },
   { v: 2, label: 'A little', shortLabel: '2' },
   { v: 3, label: 'Somewhat', shortLabel: '3' },
   { v: 4, label: 'A lot', shortLabel: '4' },
   { v: 5, label: 'Very much like me', shortLabel: '5' }
-];
-
-// Aptitude Screening Questions (8 items across Verbal, Numerical, Logical, Spatial)
-// Aligned with DepEd NCAE General Scholastic Aptitude domains
-export const APTITUDE_QUESTIONS = [
-  {
-    id: 'v1',
-    domain: 'verbal',
-    text: 'Choose the word closest in meaning to "meticulous".',
-    options: ['Careless', 'Careful and precise', 'Fast', 'Loud'],
-    correct: 1
-  },
-  {
-    id: 'v2',
-    domain: 'verbal',
-    text: '"Cause" is to "effect" as "question" is to ___.',
-    options: ['Answer', 'Word', 'Sentence', 'Book'],
-    correct: 0
-  },
-  {
-    id: 'n1',
-    domain: 'numerical',
-    text: 'A jeepney fare starts at ₱13 for the first 4 km, plus ₱2 per additional km. What is the fare for 10 km?',
-    options: ['₱25', '₱23', '₱27', '₱21'],
-    correct: 1
-  },
-  {
-    id: 'n2',
-    domain: 'numerical',
-    text: 'What number comes next: 2, 6, 18, 54, ___?',
-    options: ['108', '162', '96', '216'],
-    correct: 1
-  },
-  {
-    id: 'l1',
-    domain: 'logical',
-    text: 'All engineers in the room wear glasses. Ana wears glasses. Which statement is logically true?',
-    options: ['Ana is an engineer', 'Ana might not be an engineer', 'Ana is not an engineer', 'Not enough info about glasses'],
-    correct: 1
-  },
-  {
-    id: 'l2',
-    domain: 'logical',
-    text: 'If it rains, the game is cancelled. The game was not cancelled. What can you conclude?',
-    options: ['It rained', 'It did not rain', 'It might have rained', 'No conclusion possible'],
-    correct: 1
-  },
-  {
-    id: 's1',
-    domain: 'spatial',
-    text: 'If you fold a flat paper square in half twice and cut a small triangle off one folded corner, how many holes appear when unfolded?',
-    options: ['1 hole', '2 holes', '4 holes', '8 holes'],
-    correct: 2
-  },
-  {
-    id: 's2',
-    domain: 'spatial',
-    text: 'A solid cube is painted red on all sides, then cut into 27 identical smaller cubes. How many small cubes have paint on exactly 2 sides?',
-    options: ['8', '12', '6', '24'],
-    correct: 1
-  }
 ];
 
 export const DOMAIN_METADATA = {
@@ -255,34 +178,6 @@ export const CATEGORY_DEFAULT_MAP = {
   'Sciences': { code: 'IRE', domains: [{ d: 'logical', min: 50 }], why: 'Investigative scientific research, realistic laboratory work, and enterprising problem solving.' },
   'Education': { code: 'SAE', domains: [{ d: 'verbal', min: 50 }], why: 'Social instruction, artistic curriculum design, and enterprising classroom leadership.' }
 };
-
-/**
- * Compute normalized interest (0-100%) for each RIASEC letter and aptitude domain scores
- */
-export function computeScores(interestAnswers, aptitudeAnswers) {
-  const letters = ['R', 'I', 'A', 'S', 'E', 'C'];
-  const interest = {};
-
-  letters.forEach(l => {
-    const qs = RIASEC_QUESTIONS.filter(q => q.letter === l);
-    const sum = qs.reduce((acc, q) => acc + (interestAnswers[q.id] || 0), 0);
-    interest[l] = Math.round(((sum - qs.length) / (qs.length * 4)) * 100);
-  });
-
-  const domains = ['verbal', 'numerical', 'logical', 'spatial'];
-  const aptitude = {};
-
-  domains.forEach(d => {
-    const qs = APTITUDE_QUESTIONS.filter(q => q.domain === d);
-    const correct = qs.filter(q => aptitudeAnswers[q.id] === q.correct).length;
-    aptitude[d] = Math.round((correct / qs.length) * 100);
-  });
-
-  const sortedLetters = [...letters].sort((a, b) => interest[b] - interest[a]);
-  const code = sortedLetters.slice(0, 3).join('');
-
-  return { interest, aptitude, code, sortedLetters };
-}
 
 /**
  * Match programs against the student's interest profile and aptitude scores

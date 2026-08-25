@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 // Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
 const STRANDS_MAP = {
@@ -168,6 +169,11 @@ const AuthForm = ({ isLogin, toggleForm }) => {
               <button onClick={toggleForm} className="toggle-link" disabled={loading}>
                 {isLogin ? 'Sign Up' : 'Log In'}
               </button>
+              {isLogin ? (
+                <div className="admin-invite-link">
+                  Have an administrator invite? <Link to="/admin/register">Register here</Link>
+                </div>
+              ) : null}
             </div>
         </motion.div>
       </AnimatePresence>

@@ -286,6 +286,70 @@
   cursor: not-allowed;
 }
 
+.admin-invite-link {
+  margin-top: 0.65rem;
+  font-size: 0.76rem;
+}
+
+.admin-invite-link a {
+  color: var(--accent-teal);
+  text-decoration: none;
+}
+
+/* Administrator invitation registration */
+.admin-register-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.admin-register-card {
+  width: min(100%, 540px);
+}
+
+.admin-register-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 16px;
+  background: rgba(0, 242, 254, 0.08);
+  color: var(--accent-teal);
+}
+
+.admin-register-card .form-header h1,
+.admin-register-success h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.85rem;
+}
+
+.admin-register-success p {
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.admin-register-success .submit-btn {
+  text-decoration: none;
+}
+
+.admin-register-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.admin-register-back:hover {
+  color: var(--accent-teal);
+}
+
 /* Responsive Refinement */
 @media (max-width: 968px) {
   .auth-page {

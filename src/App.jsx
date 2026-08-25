@@ -14,6 +14,9 @@ import StudentLayout from './components/student/StudentLayout'
 import StudentProfile from './pages/student/StudentProfile'
 import Programs from './pages/student/Programs'
 import CareerAssessment from './pages/student/CareerAssessment'
+import AdminRegistration from './pages/AdminRegistration'
+import AdminInvites from './pages/admin/AdminInvites'
+import ThemeToggle from './components/common/ThemeToggle'
 import './App.css'
 
 function App() {
@@ -21,8 +24,11 @@ function App() {
 
   return (
     <div className="app">
+      <ThemeToggle />
       <Routes>
         {/* Public Route */}
+        <Route path="/admin/register" element={<AdminRegistration />} />
+
         <Route path="/" element={!user ? <AuthPage /> : (
           (loading && !role) ? (
             <div className="loading-screen">
@@ -112,6 +118,14 @@ function App() {
           <ProtectedRoute adminOnly>
             <AdminLayout>
               <ProgramManagement />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/invites" element={
+          <ProtectedRoute adminOnly>
+            <AdminLayout>
+              <AdminInvites />
             </AdminLayout>
           </ProtectedRoute>
         } />
