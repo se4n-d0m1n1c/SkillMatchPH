@@ -136,7 +136,8 @@ const AdminNotifications = () => {
                 return (
                   <Link
                     key={item.id}
-                    to="/admin/students"
+                    to={`/admin/students?student=${encodeURIComponent(item.id)}`}
+                    state={{ highlightStudentId: item.id }}
                     className={`notification-item ${isUnread ? 'unread' : ''}`}
                     onClick={() => {
                       markAllRead();

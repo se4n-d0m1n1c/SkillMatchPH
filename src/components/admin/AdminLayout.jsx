@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AdminNotifications from './AdminNotifications';
 import '../../styles/Admin.css';
@@ -30,6 +30,8 @@ const AdminLayout = ({ children }) => {
     { icon: <Users size={20} />, label: 'Students', path: '/admin/students' },
     { icon: <Building size={20} />, label: 'Universities', path: '/admin/universities' },
     { icon: <BookOpen size={20} />, label: 'Programs', path: '/admin/programs' },
+    { icon: <ClipboardList size={20} />, label: 'Assessments', path: '/admin/assessments' },
+    { icon: <ChartNoAxesCombined size={20} />, label: 'Reports', path: '/admin/reports' },
     { icon: <UserPlus size={20} />, label: 'Admin Invites', path: '/admin/invites' },
   ];
 

@@ -4,6 +4,7 @@ import { Search, Edit, Trash2, RefreshCw, X, Save, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import useSWR from 'swr';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 // ─── Module-level constants (rendering-hoist-jsx) ────────────────────────────
 const EDIT_FIELDS = [
@@ -283,12 +284,16 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const StudentManagement = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const targetStudentId = location.state?.highlightStudentId || searchParams.get('student');
   const { data: students = [], error: swrError, isLoading, mutate } = useSWR('admin-students', fetchStudents);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [highlightedStudentId, setHighlightedStudentId] = useState(null);
 
   const searchInputRef = useRef(null);
 
@@ -302,6 +307,22 @@ const StudentManagement = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (!targetStudentId || isLoading || !students.some((student) => student.id === targetStudentId)) return undefined;
+
+    setSearchTerm('');
+    setHighlightedStudentId(targetStudentId);
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(`student-${targetStudentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    const highlightTimer = window.setTimeout(() => setHighlightedStudentId(null), 4000);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [isLoading, location.key, students, targetStudentId]);
 
   const handleApprove = useCallback(async (id) => {
     try {
@@ -393,6 +414,8 @@ const StudentManagement = () => {
               {filteredStudents.map((student, i) => (
                 <motion.tr
                   key={student.id}
+                  id={`student-${student.id}`}
+                  className={highlightedStudentId === student.id ? 'student-row-highlighted' : ''}
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

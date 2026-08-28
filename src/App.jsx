@@ -16,6 +16,8 @@ import Programs from './pages/student/Programs'
 import CareerAssessment from './pages/student/CareerAssessment'
 import AdminRegistration from './pages/AdminRegistration'
 import AdminInvites from './pages/admin/AdminInvites'
+import AssessmentManagement from './pages/admin/AssessmentManagement'
+import Reports from './pages/admin/Reports'
 import ThemeToggle from './components/common/ThemeToggle'
 import './App.css'
 
@@ -126,6 +128,22 @@ function App() {
           <ProtectedRoute adminOnly>
             <AdminLayout>
               <AdminInvites />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/assessments" element={
+          <ProtectedRoute adminOnly>
+            <AdminLayout>
+              <AssessmentManagement />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/reports" element={
+          <ProtectedRoute adminOnly>
+            <AdminLayout>
+              <Reports />
             </AdminLayout>
           </ProtectedRoute>
         } />
