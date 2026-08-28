@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useDeferredValue, memo, useMemo, forwardRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, Edit, Trash2, RefreshCw, X, Save, Loader } from 'lucide-react';
+import { Search, Edit, Trash2, RefreshCw, X, Save, Loader, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import useSWR from 'swr';
@@ -246,6 +246,123 @@ const DeleteConfirmationModal = memo(forwardRef(({ student, onClose, onConfirm, 
   );
 }));
 
+const PasswordResetModal = memo(forwardRef(({ student, onClose }, ref) => {
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const passwordRef = useRef(null);
+
+  useEffect(() => { passwordRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape' && !saving) onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose, saving]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (password.length < 8) {
+      setError('The new password must be at least 8 characters.');
+      return;
+    }
+    if (password !== confirmation) {
+      setError('The passwords do not match.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('admin-reset-password', {
+        body: { userId: student.id, password },
+      });
+      if (functionError) throw functionError;
+      if (!data?.success) throw new Error(data?.error || 'Unable to change the password.');
+      setPassword('');
+      setConfirmation('');
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div ref={ref} style={MODAL_OVERLAY_STYLE} onClick={saving ? undefined : onClose} role="dialog" aria-modal="true" aria-label="Change student password">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="glass-card modal-content password-reset-modal"
+      >
+        <div className="password-reset-heading">
+          <div>
+            <h2>Change Password</h2>
+            <p>{student.first_name} {student.last_name}</p>
+          </div>
+          <button type="button" onClick={onClose} className="icon-btn" aria-label="Close modal" disabled={saving}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="password-reset-success" role="status">
+            <KeyRound size={28} />
+            <h3>Password changed</h3>
+            <p>Share the new password with the student through a secure channel.</p>
+            <button type="button" className="submit-btn" onClick={onClose}>Done</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="password-reset-form">
+            <p className="password-reset-note">Set a new password and communicate it directly to the student. It is stored only by Supabase Auth as a secure password hash.</p>
+            <label htmlFor="new-password">New password</label>
+            <div className="password-field">
+              <input
+                ref={passwordRef}
+                id="new-password"
+                type={showPassword ? 'text' : 'password'}
+                minLength="8"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button type="button" onClick={() => setShowPassword((shown) => !shown)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <label htmlFor="confirm-new-password">Confirm new password</label>
+            <input
+              id="confirm-new-password"
+              type={showPassword ? 'text' : 'password'}
+              minLength="8"
+              required
+              autoComplete="new-password"
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+            />
+            {error ? <p className="admin-action-error" role="alert">{error}</p> : null}
+            <div className="modal-footer">
+              <button type="button" onClick={onClose} className="cancel-btn" disabled={saving}>Cancel</button>
+              <button type="submit" className="submit-btn" disabled={saving}>
+                {saving ? <Loader size={18} className="animate-spin" /> : <KeyRound size={18} />}
+                {saving ? 'Changing…' : 'Change Password'}
+              </button>
+            </div>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
+}));
+
 const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
   return (
     <div className="glass-card" style={{ padding: '0.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -292,6 +409,7 @@ const StudentManagement = () => {
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [passwordTarget, setPasswordTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [highlightedStudentId, setHighlightedStudentId] = useState(null);
 
@@ -438,6 +556,7 @@ const StudentManagement = () => {
                           <button onClick={() => handleReject(student.id)} className="icon-btn" style={{ color: '#ff4d4d', fontSize: '0.75rem', fontWeight: 600, width: 'auto', padding: '0 0.75rem' }}>Reject</button>
                         </>
                       )}
+                      <button onClick={() => setPasswordTarget(student)} className="icon-btn" title="Change password" aria-label={`Change password for ${student.first_name} ${student.last_name}`}><KeyRound size={16} /></button>
                       <button onClick={() => setEditTarget(student)} className="icon-btn"><Edit size={16} /></button>
                       <button onClick={() => setDeleteTarget(student)} className="icon-btn delete"><Trash2 size={16} /></button>
                     </div>
@@ -466,6 +585,7 @@ const StudentManagement = () => {
 
       <AnimatePresence>
         {editTarget && <EditModal student={editTarget} onClose={() => setEditTarget(null)} onSave={handleEditSave} />}
+        {passwordTarget && <PasswordResetModal student={passwordTarget} onClose={() => setPasswordTarget(null)} />}
         {deleteTarget && <DeleteConfirmationModal student={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} isDeleting={isDeleting} />}
       </AnimatePresence>
 

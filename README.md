@@ -46,6 +46,14 @@ SkillMatchPH is a career pathing application designed for senior high school stu
    To activate the expanded 30-item RIASEC inventory, run
    [supabase/assessment_v2_riasec.sql](supabase/assessment_v2_riasec.sql) afterwards.
 
+5. **Deploy the administrator password function:**
+   ```bash
+   supabase functions deploy admin-reset-password
+   ```
+   Supabase supplies the function's `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
+   `SUPABASE_SERVICE_ROLE_KEY` secrets automatically. Set `VITE_ADMIN_CONTACT_EMAIL`
+   in the frontend environment to show a clickable administrator contact on login.
+
 ### Running Locally
 
 To start the development server:

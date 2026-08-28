@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
 
 // Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
 const STRANDS_MAP = {
@@ -21,7 +20,7 @@ const INITIAL_FORM = {
   shsStrand: 'STEM',
 };
 
-const AuthForm = ({ isLogin, toggleForm }) => {
+const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
   const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -29,6 +28,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
 
   // Derived state — no useEffect needed (rerender-derived-state-no-effect)
   const availableStrands = STRANDS_MAP[formData.shsTrack];
+  const adminContactEmail = import.meta.env.VITE_ADMIN_CONTACT_EMAIL;
 
   // Use functional setState to avoid stale closures (rerender-functional-setstate)
   const handleChange = (field) => (e) => {
@@ -151,7 +151,14 @@ const AuthForm = ({ isLogin, toggleForm }) => {
 
               {isLogin ? (
                 <div className="form-footer">
-                  <a href="#" className="forgot-password">Forgot Password?</a>
+                  <span className="password-help">
+                    Need to change your password?{' '}
+                    {adminContactEmail ? (
+                      <a href={`mailto:${adminContactEmail}`}>Contact your administrator</a>
+                    ) : (
+                      'Contact your school administrator.'
+                    )}
+                  </span>
                 </div>
               ) : null}
 
@@ -171,7 +178,7 @@ const AuthForm = ({ isLogin, toggleForm }) => {
               </button>
               {isLogin ? (
                 <div className="admin-invite-link">
-                  Have an administrator invite? <Link to="/admin/register">Register here</Link>
+                  Have an administrator invite? <button type="button" onClick={showAdminRegistration}>Register here</button>
                 </div>
               ) : null}
             </div>

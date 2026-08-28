@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope, Loader2, Server, Cpu, Bot, Pill, Activity, Radiation, TestTube, Wrench, Zap, Radio, Factory, FlaskConical, Calculator, Coins, Megaphone, Lightbulb, Utensils, GraduationCap, BookOpen, Dna, Palette, X, MapPin, Globe, ExternalLink, Navigation } from 'lucide-react';
+import { Search, Code, Briefcase, Stethoscope, HeartHandshake, PenTool, BrainCircuit, HardHat, Building, Scale, Microscope, Loader2, Server, Cpu, Bot, Pill, Activity, Radiation, TestTube, Wrench, Zap, Radio, Factory, FlaskConical, Calculator, Coins, Megaphone, Lightbulb, Utensils, GraduationCap, BookOpen, Dna, Palette, X, MapPin, Globe, ExternalLink } from 'lucide-react';
 import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -201,7 +201,6 @@ const Programs = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [onlyNearby, setOnlyNearby] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const pinnedLocation = getSavedPinnedLocation(user?.id);
 
@@ -222,21 +221,13 @@ const Programs = () => {
       const matchesCategory = activeCategory === 'All' || program.category === activeCategory;
       if (!matchesCategory) return false;
       
-      // Proximity check if onlyNearby is enabled
-      if (onlyNearby) {
-        const hasNearby = (program.universities || []).some(u => 
-          calculateLocationProximity(pinnedLocation, u.location, u.name).isNearby
-        );
-        if (!hasNearby) return false;
-      }
-
       // js-early-exit: If no search query, skip expensive string matching
       if (!searchLower) return true;
 
       return program.title.toLowerCase().includes(searchLower) || 
              program.description.toLowerCase().includes(searchLower);
     });
-  }, [searchQuery, activeCategory, onlyNearby, pinnedLocation, programs]);
+  }, [searchQuery, activeCategory, programs]);
 
   return (
     <div className="student-page" style={{ padding: '2rem 0' }}>
@@ -282,7 +273,7 @@ const Programs = () => {
           />
         </div>
 
-        {/* Category Pills & Location Filter */}
+        {/* Category Pills */}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {CATEGORIES.map(category => (
             <button
@@ -302,27 +293,6 @@ const Programs = () => {
               {category}
             </button>
           ))}
-
-          <button
-            onClick={() => setOnlyNearby(!onlyNearby)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '999px',
-              border: `1px solid ${onlyNearby ? 'var(--accent-teal)' : 'var(--glass-border)'}`,
-              background: onlyNearby ? 'rgba(0, 242, 254, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-              color: onlyNearby ? 'var(--accent-teal)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              fontSize: '0.9rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontWeight: onlyNearby ? 600 : 400
-            }}
-          >
-            <Navigation size={14} />
-            {onlyNearby ? `Near Me (${(pinnedLocation.address || '').split(',')[0]})` : 'Filter Near Me'}
-          </button>
         </div>
       </motion.div>
 

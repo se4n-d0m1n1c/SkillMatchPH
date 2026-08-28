@@ -3,6 +3,100 @@
   background-color: var(--bg-deep);
 }
 
+.password-reset-modal {
+  width: min(100%, 480px);
+}
+
+.password-reset-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.password-reset-heading h2,
+.password-reset-success h3 {
+  margin: 0;
+}
+
+.password-reset-heading p,
+.password-reset-success p,
+.password-reset-note {
+  color: var(--text-secondary);
+}
+
+.password-reset-heading p {
+  margin: 0.35rem 0 0;
+}
+
+.password-reset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.password-reset-form label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.password-reset-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font: inherit;
+  outline: none;
+}
+
+.password-reset-form input:focus {
+  border-color: var(--accent-teal);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 3rem;
+}
+
+.password-field button {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-reset-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.password-reset-success {
+  padding: 1rem 0 0;
+  text-align: center;
+}
+
+.password-reset-success svg {
+  margin-bottom: 0.75rem;
+  color: var(--accent-teal);
+}
+
+.password-reset-success .submit-btn {
+  width: 100%;
+}
+
 /* ── Mobile Header ───────────────────────────────────── */
 .mobile-header {
   display: none;

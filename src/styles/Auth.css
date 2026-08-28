@@ -211,15 +211,21 @@
   justify-content: flex-end;
 }
 
-.forgot-password {
+.password-help {
   font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.password-help a {
   color: var(--accent-teal);
   text-decoration: none;
   opacity: 0.8;
   transition: opacity 0.2s;
 }
 
-.forgot-password:hover {
+.password-help a:hover {
   opacity: 1;
 }
 
@@ -292,9 +298,18 @@
   font-size: 0.76rem;
 }
 
-.admin-invite-link a {
+.admin-invite-link a,
+.admin-invite-link button {
   color: var(--accent-teal);
   text-decoration: none;
+}
+
+.admin-invite-link button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
 }
 
 /* Administrator invitation registration */
@@ -306,7 +321,12 @@
 }
 
 .admin-register-card {
-  width: min(100%, 540px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-signup-mode .form-wrapper {
+  max-width: 700px;
 }
 
 .admin-register-mark {
@@ -349,6 +369,15 @@
 
 .admin-register-back:hover {
   color: var(--accent-teal);
+}
+
+.admin-register-back-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 /* Responsive Refinement */
