@@ -201,21 +201,26 @@ export default function CareerAssessment() {
     });
   }, [scoreResults, catalogPrograms, pinnedLocation]);
 
+  const topRankedPrograms = useMemo(() => (
+    [...rankedPrograms]
+      .sort((a, b) => b.adjustedMatch - a.adjustedMatch)
+      .slice(0, 3)
+  ), [rankedPrograms]);
+
   // Filtered programs
   const displayedPrograms = useMemo(() => {
-    let list = [...rankedPrograms];
     if (onlyNearby) {
-      list = list.filter(p => p.hasNearbyOffering);
+      return topRankedPrograms.filter(p => p.hasNearbyOffering);
     }
-    return list.sort((a, b) => b.adjustedMatch - a.adjustedMatch);
-  }, [rankedPrograms, onlyNearby]);
+    return topRankedPrograms;
+  }, [topRankedPrograms, onlyNearby]);
 
   // Derived recommended universities with real-time Haversine distance
   const recommendedUniversities = useMemo(() => {
-    if (!rankedPrograms || rankedPrograms.length === 0) return [];
+    if (topRankedPrograms.length === 0) return [];
     const uniMap = new Map();
 
-    rankedPrograms.slice(0, 8).forEach(program => {
+    topRankedPrograms.forEach(program => {
       (program.universities || []).forEach(uni => {
         if (!uniMap.has(uni.name)) {
           const prox = calculateLocationProximity(pinnedLocation, uni.location, uni.name);
@@ -254,7 +259,7 @@ export default function CareerAssessment() {
       }
       return (b.proximity.score || 0) - (a.proximity.score || 0) || b.matchedPrograms.length - a.matchedPrograms.length;
     });
-  }, [rankedPrograms, pinnedLocation]);
+  }, [topRankedPrograms, pinnedLocation]);
 
   const displayedUniversities = useMemo(() => {
     if (onlyNearby) {
@@ -1175,7 +1180,7 @@ export default function CareerAssessment() {
             {/* 4A. TAB: RECOMMENDED DEGREE PROGRAMS */}
             {resultsTab === 'programs' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {displayedPrograms.slice(0, 8).map((prog, idx) => (
+                {displayedPrograms.map((prog, idx) => (
                   <motion.div
                     key={prog.id || prog.name}
                     initial={{ opacity: 0, y: 15 }}

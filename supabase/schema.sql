@@ -12,7 +12,7 @@ create table public.profiles (
   grade_level smallint not null check (grade_level in (11, 12)),
   shs_track text not null,
   shs_strand text not null,
-  avatar_url text,
+  avatar_path text,
   role text not null default 'student' check (role in ('student', 'admin')),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
@@ -152,12 +152,14 @@ for each row execute function public.protect_profile_system_fields();
 
 -- Public avatar reads, with writes limited to the signed-in user's folder.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+values ('avatars', 'avatars', false, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
 
 create policy "users read own avatar" on storage.objects
   for select to authenticated using (
-    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+    bucket_id = 'avatars' and (
+      (storage.foldername(name))[1] = auth.uid()::text or public.is_admin()
+    )
   );
 create policy "users upload own avatar" on storage.objects
   for insert to authenticated with check (

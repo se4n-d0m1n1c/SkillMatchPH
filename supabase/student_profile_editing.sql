@@ -2,7 +2,30 @@
 -- Run this migration once in the Supabase SQL editor for an existing project.
 
 alter table public.profiles
-  add column if not exists avatar_url text;
+  add column if not exists avatar_path text;
+
+-- Preserve existing uploads while removing permanent public URLs from profiles.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'avatar_url'
+  ) then
+    update public.profiles
+    set avatar_path = split_part(
+      split_part(avatar_url, '/object/public/avatars/', 2),
+      '?',
+      1
+    )
+    where avatar_path is null
+      and avatar_url like '%/object/public/avatars/%';
+
+    alter table public.profiles drop column avatar_url;
+  end if;
+end;
+$$;
 
 -- Students may update their row, while the trigger below prevents privilege and
 -- account-state changes. Admin updates continue to work as before.
@@ -37,23 +60,26 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'avatars',
   'avatars',
-  true,
+  false,
   2097152,
   array['image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update set
-  public = excluded.public,
+  public = false,
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- Upserts need SELECT access to detect and replace an existing object. The
--- bucket is public for delivery, but Storage API operations still honor RLS.
+-- Upserts need SELECT access to detect and replace an existing object. Reads
+-- are limited to the owner and administrators because the bucket is private.
 drop policy if exists "users read own avatar" on storage.objects;
 create policy "users read own avatar" on storage.objects
   for select to authenticated
   using (
     bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or public.is_admin()
+    )
   );
 
 drop policy if exists "users upload own avatar" on storage.objects;

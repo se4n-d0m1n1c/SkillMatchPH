@@ -39,6 +39,26 @@ const StudentProfile = () => {
   const [pinnedLocation, setPinnedLocation] = useState(() => getSavedPinnedLocation(user?.id));
   const [showMapModal, setShowMapModal] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadAvatar = async () => {
+      if (!profile?.avatar_path) {
+        setAvatarUrl('');
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .createSignedUrl(profile.avatar_path, 60 * 60);
+      if (isCurrent) setAvatarUrl(error ? '' : data.signedUrl);
+    };
+
+    loadAvatar();
+    return () => { isCurrent = false; };
+  }, [profile?.avatar_path, profile?.updated_at]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -107,8 +127,8 @@ const StudentProfile = () => {
         <motion.div className="glass-card" style={{ flex: '1 1 300px' }} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '2rem 0' }}>
             <div className="profile-avatar">
-              {profile?.avatar_url
-                ? <img src={profile.avatar_url} alt={`${fullName}'s profile`} />
+              {avatarUrl
+                ? <img src={avatarUrl} alt={`${fullName}'s profile`} />
                 : firstName.charAt(0) || 'S'}
             </div>
             <h3 style={{ fontSize: '1.8rem', margin: '0 0 0.5rem 0' }}>{fullName}</h3>
@@ -291,6 +311,7 @@ const StudentProfile = () => {
         <ProfileEditor
           user={user}
           profile={profile}
+          avatarUrl={avatarUrl}
           onSaved={refreshProfile}
           onClose={() => setShowProfileEditor(false)}
         />

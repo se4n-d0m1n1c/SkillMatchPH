@@ -16,10 +16,10 @@ const makeForm = (profile) => ({
   shs_strand: profile?.shs_strand || 'STEM',
 });
 
-const ProfileEditor = ({ user, profile, onClose, onSaved }) => {
+const ProfileEditor = ({ user, profile, avatarUrl, onClose, onSaved }) => {
   const [form, setForm] = useState(() => makeForm(profile));
   const [avatarFile, setAvatarFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(profile?.avatar_url || '');
+  const [previewUrl, setPreviewUrl] = useState(avatarUrl || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -56,7 +56,7 @@ const ProfileEditor = ({ user, profile, onClose, onSaved }) => {
   };
 
   const uploadAvatar = async () => {
-    if (!avatarFile) return profile?.avatar_url || null;
+    if (!avatarFile) return profile?.avatar_path || null;
     const extension = avatarFile.type.split('/')[1].replace('jpeg', 'jpg');
     const path = `${user.id}/avatar.${extension}`;
     const { error: uploadError } = await supabase.storage
@@ -66,8 +66,7 @@ const ProfileEditor = ({ user, profile, onClose, onSaved }) => {
       throw new Error(`Profile picture upload failed: ${uploadError.message}`);
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-    return `${data.publicUrl}?v=${Date.now()}`;
+    return path;
   };
 
   const handleSubmit = async (event) => {
@@ -77,14 +76,14 @@ const ProfileEditor = ({ user, profile, onClose, onSaved }) => {
     setError('');
 
     try {
-      const avatarUrl = await uploadAvatar();
+      const avatarPath = await uploadAvatar();
       const updates = {
         ...form,
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
         student_no: form.student_no.trim(),
         grade_level: Number(form.grade_level),
-        avatar_url: avatarUrl,
+        avatar_path: avatarPath,
       };
       const { error: updateError } = await supabase
         .from('profiles')
