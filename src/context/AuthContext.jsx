@@ -121,10 +121,21 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = async () => {
+    if (!user?.id) return null;
+
+    const profileData = await fetchProfile(user.id);
+    setProfile(profileData);
+    setRole(profileData.role);
+    setStatus(profileData.status);
+    return profileData;
+  };
+
   const value = React.useMemo(() => ({
     signUp,
     signIn,
     signOut,
+    refreshProfile,
     user,
     session,
     role,

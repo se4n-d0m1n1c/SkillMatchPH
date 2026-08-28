@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked, Target, ChevronRight, Award, MapPin, Crosshair } from 'lucide-react';
+import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked, Target, ChevronRight, MapPin, Crosshair, Pencil } from 'lucide-react';
 import { getSavedPinnedLocation, savePinnedLocation } from '../../data/locationsData';
 import GrabLocationPickerModal from '../../components/common/GrabLocationPickerModal';
+import ProfileEditor from '../../components/student/ProfileEditor';
+import '../../styles/Profile.css';
 
 // 1. Hoist static animation variants to module scope to prevent recreation on re-render (rendering-hoist-jsx)
 const CONTAINER_VARIANTS = {
@@ -32,10 +34,11 @@ const PROFILE_FIELDS = [
 ];
 
 const StudentProfile = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [assessmentData, setAssessmentData] = useState(null);
   const [pinnedLocation, setPinnedLocation] = useState(() => getSavedPinnedLocation(user?.id));
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -80,19 +83,22 @@ const StudentProfile = () => {
   };
 
   // 3. Combine names safely using inline derivation, avoiding unnecessary useEffect (rerender-derived-state-no-effect)
-  const firstName = user?.user_metadata?.first_name || '';
-  const lastName = user?.user_metadata?.last_name || '';
+  const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
+  const lastName = profile?.last_name || user?.user_metadata?.last_name || '';
   const fullName = `${firstName} ${lastName}`.trim() || 'Student';
 
   return (
     <div className="student-page" style={{ padding: '2rem 0' }}>
       <motion.div
+        className="profile-page-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ marginBottom: '3rem' }}
       >
-        <h2 style={{ fontSize: '2.5rem', margin: 0, color: 'var(--text-primary)' }}>My Profile</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>View your personal information and academic details.</p>
+        <div>
+          <h2 style={{ fontSize: '2.5rem', margin: 0, color: 'var(--text-primary)' }}>My Profile</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>View and update your personal information and academic details.</p>
+        </div>
+        <button className="profile-edit-button" onClick={() => setShowProfileEditor(true)}><Pencil size={17} /> Edit profile</button>
       </motion.div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
@@ -100,21 +106,10 @@ const StudentProfile = () => {
         {/* Profile Identity Card */}
         <motion.div className="glass-card" style={{ flex: '1 1 300px' }} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '2rem 0' }}>
-            <div style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              background: 'var(--glass-bg)',
-              border: '2px solid var(--accent-teal)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '3rem',
-              color: 'var(--accent-teal)',
-              marginBottom: '1.5rem',
-              boxShadow: '0 0 20px rgba(0, 242, 254, 0.2)'
-            }}>
-              {firstName.charAt(0) || 'S'}
+            <div className="profile-avatar">
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} alt={`${fullName}'s profile`} />
+                : firstName.charAt(0) || 'S'}
             </div>
             <h3 style={{ fontSize: '1.8rem', margin: '0 0 0.5rem 0' }}>{fullName}</h3>
             <span style={{ 
@@ -291,6 +286,15 @@ const StudentProfile = () => {
           />
         )}
       </AnimatePresence>
+
+      {showProfileEditor ? (
+        <ProfileEditor
+          user={user}
+          profile={profile}
+          onSaved={refreshProfile}
+          onClose={() => setShowProfileEditor(false)}
+        />
+      ) : null}
     </div>
   );
 };

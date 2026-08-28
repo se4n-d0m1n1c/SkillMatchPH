@@ -12,6 +12,7 @@ create table public.profiles (
   grade_level smallint not null check (grade_level in (11, 12)),
   shs_track text not null,
   shs_strand text not null,
+  avatar_url text,
   role text not null default 'student' check (role in ('student', 'admin')),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
@@ -124,6 +125,54 @@ create policy "read own profile or all as admin" on public.profiles
   for select to authenticated using (id = auth.uid() or public.is_admin());
 create policy "admin updates profiles" on public.profiles
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "students update own profile" on public.profiles
+  for update to authenticated
+  using (id = auth.uid() and role = 'student')
+  with check (id = auth.uid() and role = 'student');
+
+-- Self-service edits must never change authorization or approval fields.
+create function public.protect_profile_system_fields()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    new.id := old.id;
+    new.role := old.role;
+    new.status := old.status;
+    new.created_at := old.created_at;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger profiles_protect_system_fields before update on public.profiles
+for each row execute function public.protect_profile_system_fields();
+
+-- Public avatar reads, with writes limited to the signed-in user's folder.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;
+
+create policy "users read own avatar" on storage.objects
+  for select to authenticated using (
+    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+create policy "users upload own avatar" on storage.objects
+  for insert to authenticated with check (
+    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+create policy "users update own avatar" on storage.objects
+  for update to authenticated using (
+    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+  ) with check (
+    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+  );
+create policy "users delete own avatar" on storage.objects
+  for delete to authenticated using (
+    bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 -- All signed-in users may browse the catalog; only admins may change it.
 create policy "authenticated read programs" on public.programs

@@ -1,0 +1,27 @@
+.profile-page-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 3rem; }
+.profile-edit-button, .profile-save-button, .profile-secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.profile-edit-button, .profile-save-button { padding: .7rem 1rem; border: 0; background: var(--primary-action-bg); color: #fff; }
+.profile-secondary-button { padding: .55rem .8rem; border: 1px solid var(--glass-border); background: var(--field-bg); color: var(--text-primary); }
+.profile-save-button:disabled { opacity: .65; cursor: wait; }
+.profile-avatar { width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--accent-teal); overflow: hidden; display: grid; place-items: center; font-size: 3rem; color: var(--accent-teal); margin-bottom: 1.5rem; box-shadow: 0 0 20px rgba(0,242,254,.2); background: var(--field-bg); }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-editor-backdrop { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 1rem; background: rgba(3,7,18,.76); backdrop-filter: blur(8px); }
+.profile-editor { width: min(720px, 100%); max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.5rem; background: var(--surface-raised); }
+.profile-editor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.4rem; }
+.profile-editor-header span { color: var(--accent-teal); font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
+.profile-editor-header h2 { margin: .2rem 0 0; }
+.profile-icon-button { width: 38px; height: 38px; border: 1px solid var(--glass-border); border-radius: 10px; display: grid; place-items: center; background: var(--field-bg); color: var(--text-primary); cursor: pointer; }
+.avatar-editor { display: flex; align-items: center; gap: 1.2rem; padding: 1rem; margin-bottom: 1.25rem; border: 1px solid var(--glass-border); border-radius: 14px; background: var(--subtle-surface); }
+.avatar-editor-preview { position: relative; flex: 0 0 84px; width: 84px; height: 84px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--field-bg); color: var(--accent-teal); font-size: 2rem; border: 2px solid var(--accent-teal); }
+.avatar-editor-preview img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-editor-preview svg { position: absolute; right: 3px; bottom: 3px; padding: 3px; box-sizing: content-box; border-radius: 50%; color: white; background: var(--accent-violet); }
+.avatar-editor p { margin: .15rem 0 .65rem; color: var(--text-secondary); font-size: .82rem; }
+.profile-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
+.profile-form-grid label { display: grid; gap: .4rem; color: var(--text-secondary); font-size: .82rem; font-weight: 600; }
+.profile-form-grid input, .profile-form-grid select { width: 100%; padding: .75rem .85rem; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--field-bg); color: var(--text-primary); font: inherit; }
+.profile-form-grid input:focus, .profile-form-grid select:focus { outline: 2px solid color-mix(in srgb, var(--accent-teal) 35%, transparent); border-color: var(--accent-teal); }
+.profile-form-message { display: flex; align-items: center; gap: .4rem; margin: 1rem 0 0; padding: .7rem; border-radius: 9px; font-size: .86rem; }
+.profile-form-message.error { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+.profile-form-message.success { color: var(--success); background: rgba(74,222,128,.1); }
+.profile-editor-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); }
+@media (max-width: 600px) { .profile-page-header { align-items: flex-start; margin-bottom: 2rem; } .profile-form-grid { grid-template-columns: 1fr; } .avatar-editor { align-items: flex-start; } }
