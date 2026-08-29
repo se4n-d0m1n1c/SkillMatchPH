@@ -19,6 +19,11 @@ const formatDate = (value) => new Date(value).toLocaleString('en-PH', {
   timeStyle: 'short',
 });
 
+const REASON_LABELS = {
+  username_help: 'Recover username',
+  password_help: 'Recover password',
+};
+
 const ContactRequests = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -87,7 +92,7 @@ const ContactRequests = () => {
       <header className="page-header">
         <div>
           <h1 style={{ marginBottom: '0.5rem' }}>Contact Requests</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Review students who asked a school administrator for password help.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Review students who asked a school administrator for help.</p>
         </div>
         <button type="button" className="invite-create-btn" onClick={() => mutate()} disabled={isValidating}>
           {isValidating ? <Loader2 className="animate-spin" size={18} /> : <RefreshCw size={18} />}
@@ -126,7 +131,7 @@ const ContactRequests = () => {
                 >
                   <td><strong>{name}</strong></td>
                   <td><a className="request-email-link" href={`mailto:${request.requester_email}`}><Mail size={15} />{request.requester_email}</a></td>
-                  <td>Password assistance</td>
+                  <td>{REASON_LABELS[request.reason] || 'Password assistance'}</td>
                   <td>{formatDate(request.created_at)}</td>
                   <td><span className={`request-status ${request.status}`}>{request.status}</span></td>
                   <td>

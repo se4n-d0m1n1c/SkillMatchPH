@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 
 const AdminContactForm = ({ onBack }) => {
   const [email, setEmail] = useState('');
+  const [recoveryType, setRecoveryType] = useState('username_help');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -15,8 +16,9 @@ const AdminContactForm = ({ onBack }) => {
     setError('');
     setSuccess('');
 
-    const { error: requestError } = await supabase.rpc('request_admin_contact', {
+    const { data: status, error: requestError } = await supabase.rpc('request_admin_contact', {
       submitted_email: email.trim(),
+      requested_reason: recoveryType,
     });
     setSending(false);
 
@@ -25,7 +27,9 @@ const AdminContactForm = ({ onBack }) => {
       return;
     }
 
-    setSuccess('If an account matches that email, a school administrator has been notified.');
+    setSuccess(status === 'existing'
+      ? 'You already have an ongoing concern. Please wait for your administrator to respond.'
+      : 'If an account matches that email, a school administrator has been notified.');
   };
 
   return (
@@ -38,10 +42,22 @@ const AdminContactForm = ({ onBack }) => {
     >
       <div className="form-header">
         <h3>Contact your administrator</h3>
-        <p>Enter your email so your school administrator can help recover your username.</p>
+        <p>Choose what you need help recovering, then enter your account email.</p>
       </div>
 
       <form className="auth-form" onSubmit={submit}>
+        <fieldset className="recovery-choice">
+          <legend>What do you need to recover?</legend>
+          <label className={recoveryType === 'username_help' ? 'active' : ''}>
+            <input type="radio" name="recoveryType" value="username_help" checked={recoveryType === 'username_help'} onChange={(event) => setRecoveryType(event.target.value)} />
+            <span><strong>Username</strong><small>Ask an administrator to find or change your login username.</small></span>
+          </label>
+          <label className={recoveryType === 'password_help' ? 'active' : ''}>
+            <input type="radio" name="recoveryType" value="password_help" checked={recoveryType === 'password_help'} onChange={(event) => setRecoveryType(event.target.value)} />
+            <span><strong>Password</strong><small>Ask an administrator for help resetting your password.</small></span>
+          </label>
+        </fieldset>
+
         <div className="input-group">
           <Mail className="input-icon" size={18} />
           <input

@@ -17,13 +17,32 @@ const fetchOpenRequestCount = async () => {
   return count ?? 0;
 };
 
+const fetchUnreadNotificationCount = async ([, userId, readRevision]) => {
+  const lastReadAt = localStorage.getItem(`skillmatch-admin-notifications-read:${userId}`);
+  let query = supabase
+    .from('admin_notifications')
+    .select('id', { count: 'exact', head: true });
+
+  if (lastReadAt) query = query.gt('created_at', lastReadAt);
+  const { count, error } = await query;
+  if (error) return 0;
+  void readRevision;
+  return count ?? 0;
+};
+
 const AdminLayout = ({ children }) => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationReadRevision, setNotificationReadRevision] = useState(0);
   const { data: openRequestCount = 0, mutate: refreshRequestCount } = useSWR(
     'admin-open-contact-request-count',
     fetchOpenRequestCount,
+    { refreshInterval: 30_000 },
+  );
+  const { data: unreadNotificationCount = 0, mutate: refreshNotificationCount } = useSWR(
+    user ? ['admin-unread-notification-count', user.id, notificationReadRevision] : null,
+    fetchUnreadNotificationCount,
     { refreshInterval: 30_000 },
   );
 
@@ -34,14 +53,21 @@ const AdminLayout = ({ children }) => {
 
   useEffect(() => {
     const channel = supabase
-      .channel('admin-contact-request-count')
+      .channel('admin-sidebar-activity-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_contact_requests' }, () => refreshRequestCount())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => refreshNotificationCount())
       .subscribe();
+
+    const refreshReadState = () => setNotificationReadRevision((current) => current + 1);
+    window.addEventListener('admin-notifications-read', refreshReadState);
+    window.addEventListener('storage', refreshReadState);
 
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('admin-notifications-read', refreshReadState);
+      window.removeEventListener('storage', refreshReadState);
     };
-  }, [refreshRequestCount]);
+  }, [refreshRequestCount, refreshNotificationCount]);
 
   // Prevent scroll when sidebar is open on mobile
   useEffect(() => {
@@ -139,7 +165,11 @@ const AdminLayout = ({ children }) => {
             >
               {item.icon}
               <span>{item.label}</span>
-              {item.path === '/admin/requests' && openRequestCount > 0 ? (
+              {item.path === '/admin/notifications' && unreadNotificationCount > 0 ? (
+                <span className="nav-request-badge nav-notification-badge" aria-label={`${unreadNotificationCount} unread notifications`}>
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </span>
+              ) : item.path === '/admin/requests' && openRequestCount > 0 ? (
                 <span className="nav-request-badge" aria-label={`${openRequestCount} open contact requests`}>
                   {openRequestCount > 99 ? '99+' : openRequestCount}
                 </span>

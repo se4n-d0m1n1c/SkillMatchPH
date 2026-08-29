@@ -14,7 +14,7 @@ alter table public.admin_notifications
   drop constraint if exists admin_notifications_type_check;
 alter table public.admin_notifications
   add constraint admin_notifications_type_check
-  check (type in ('student_registration', 'student_profile_updated', 'admin_contact_requested'));
+  check (type in ('student_registration', 'student_profile_updated', 'admin_contact_requested', 'student_username_changed'));
 
 create index if not exists admin_notifications_created_at_idx
   on public.admin_notifications (created_at desc);
@@ -28,12 +28,18 @@ create table if not exists public.admin_contact_requests (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
   requester_email text not null,
-  reason text not null default 'password_help' check (reason in ('password_help')),
+  reason text not null default 'password_help' check (reason in ('username_help', 'password_help')),
   status text not null default 'open' check (status in ('open', 'resolved')),
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
   resolved_by uuid references public.profiles(id) on delete set null
 );
+
+alter table public.admin_contact_requests
+  drop constraint if exists admin_contact_requests_reason_check;
+alter table public.admin_contact_requests
+  add constraint admin_contact_requests_reason_check
+  check (reason in ('username_help', 'password_help'));
 
 create unique index if not exists admin_contact_requests_one_open_per_profile_idx
   on public.admin_contact_requests (profile_id)
@@ -50,16 +56,24 @@ create policy "admins read contact requests" on public.admin_contact_requests
 
 -- The response is intentionally identical for known and unknown email addresses
 -- so this public endpoint cannot be used to discover registered accounts.
-create or replace function public.request_admin_contact(submitted_email text)
-returns void
+-- Returns a status so the login page can tell a matching student whether they
+-- already have an open concern, while keeping unknown emails indistinguishable
+-- from newly-created requests.
+drop function if exists public.request_admin_contact(text);
+create or replace function public.request_admin_contact(submitted_email text, requested_reason text default 'password_help')
+returns text
 language plpgsql
 security definer
 set search_path = public, auth
 as $$
 declare
   normalized_email text := lower(trim(coalesce(submitted_email, '')));
+  normalized_reason text := lower(trim(coalesce(requested_reason, '')));
   matched_profile_id uuid;
 begin
+  if normalized_reason not in ('username_help', 'password_help') then
+    raise exception 'Choose username or password recovery';
+  end if;
   if length(normalized_email) < 3 or length(normalized_email) > 320
      or normalized_email !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
     raise exception 'Enter a valid email address';
@@ -72,15 +86,20 @@ begin
   where lower(account.email) = normalized_email
   limit 1;
 
-  if matched_profile_id is not null then
-    insert into public.admin_contact_requests (profile_id, requester_email)
-    values (matched_profile_id, normalized_email)
-    on conflict (profile_id) where status = 'open' do nothing;
+  if matched_profile_id is null then
+    return 'unknown';
+  end if;
 
-    if found then
-      insert into public.admin_notifications (type, student_id)
-      values ('admin_contact_requested', matched_profile_id);
-    end if;
+  insert into public.admin_contact_requests (profile_id, requester_email, reason)
+  values (matched_profile_id, normalized_email, normalized_reason)
+  on conflict (profile_id) where status = 'open' do nothing;
+
+  if found then
+    insert into public.admin_notifications (type, student_id, changed_fields)
+    values ('admin_contact_requested', matched_profile_id, array[normalized_reason]);
+    return 'created';
+  else
+    return 'existing';
   end if;
 end;
 $$;
@@ -102,9 +121,9 @@ begin
 end;
 $$;
 
-revoke all on function public.request_admin_contact(text) from public;
+revoke all on function public.request_admin_contact(text, text) from public;
 revoke all on function public.resolve_admin_contact_request(uuid) from public;
-grant execute on function public.request_admin_contact(text) to anon, authenticated;
+grant execute on function public.request_admin_contact(text, text) to anon, authenticated;
 grant execute on function public.resolve_admin_contact_request(uuid) to authenticated;
 
 do $$

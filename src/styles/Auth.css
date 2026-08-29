@@ -297,6 +297,63 @@
   gap: 1rem;
 }
 
+.recovery-choice {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.recovery-choice legend {
+  margin-bottom: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.recovery-choice label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--field-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recovery-choice label:hover {
+  border-color: rgba(0, 242, 254, 0.45);
+}
+
+.recovery-choice label.active {
+  border-color: var(--accent-teal);
+  background: rgba(0, 242, 254, 0.08);
+}
+
+.recovery-choice input {
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent-teal);
+}
+
+.recovery-choice span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.recovery-choice strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.recovery-choice small {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .submit-btn {
   margin-top: 1rem;
   padding: 1rem;

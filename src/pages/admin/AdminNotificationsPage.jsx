@@ -49,11 +49,12 @@ const itemMeta = (item) => {
   let detail = `${name} changed ${formatChangedFields(item.changed_fields)}.`;
   let destination = `/admin/students?student=${encodeURIComponent(item.student_id)}`;
   let state = { highlightStudentId: item.student_id };
+  const contactReason = item.changed_fields?.[0] === 'username_help' ? 'username recovery' : 'password assistance';
 
   if (isContactRequest) {
     icon = <MessageCircleQuestion size={18} />;
     title = 'Administrator contact requested';
-    detail = `${name} requested password assistance.`;
+    detail = `${name} requested ${contactReason}.`;
     destination = `/admin/requests?student=${encodeURIComponent(item.student_id)}`;
     state = { highlightRequestStudentId: item.student_id };
   } else if (isRegistration) {
@@ -145,6 +146,7 @@ const AdminNotificationsPage = () => {
     const now = new Date().toISOString();
     localStorage.setItem(storageKey, now);
     setLastReadAt(now);
+    window.dispatchEvent(new CustomEvent('admin-notifications-read', { detail: { userId: user?.id, readAt: now } }));
   };
 
   return (
@@ -157,7 +159,7 @@ const AdminNotificationsPage = () => {
           </p>
         </div>
         {unreadCount > 0 ? (
-          <button type="button" className="refresh-btn mark-read-btn" onClick={markAllRead}>
+          <button type="button" className="notification-page-mark-read" onClick={markAllRead}>
             <CheckCheck size={18} /> Mark all read
           </button>
         ) : null}
@@ -196,6 +198,7 @@ const AdminNotificationsPage = () => {
                     to={meta.destination}
                     state={meta.state}
                     className={`notification-item ${isUnread ? 'unread' : ''}`}
+                    onClick={markAllRead}
                   >
                     <span className="notification-icon">{meta.icon}</span>
                     <span className="notification-copy">

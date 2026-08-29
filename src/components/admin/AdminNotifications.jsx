@@ -49,6 +49,14 @@ const AdminNotifications = () => {
 
   useEffect(() => {
     setLastReadAt(localStorage.getItem(storageKey));
+
+    const refreshReadState = () => setLastReadAt(localStorage.getItem(storageKey));
+    window.addEventListener('admin-notifications-read', refreshReadState);
+    window.addEventListener('storage', refreshReadState);
+    return () => {
+      window.removeEventListener('admin-notifications-read', refreshReadState);
+      window.removeEventListener('storage', refreshReadState);
+    };
   }, [storageKey]);
 
   useEffect(() => {
@@ -92,6 +100,7 @@ const AdminNotifications = () => {
     const now = new Date().toISOString();
     localStorage.setItem(storageKey, now);
     setLastReadAt(now);
+    window.dispatchEvent(new CustomEvent('admin-notifications-read', { detail: { userId: user?.id, readAt: now } }));
   };
 
   const togglePanel = () => {
@@ -141,6 +150,7 @@ const AdminNotifications = () => {
                 const isRegistration = item.type === 'student_registration';
                 const isContactRequest = item.type === 'admin_contact_requested';
                 const isUsernameChange = item.type === 'student_username_changed';
+                const contactReason = item.changed_fields?.[0] === 'username_help' ? 'username recovery' : 'password assistance';
                 const destination = isContactRequest
                   ? `/admin/requests?student=${encodeURIComponent(item.student_id)}`
                   : `/admin/students?student=${encodeURIComponent(item.student_id)}`;
@@ -168,7 +178,7 @@ const AdminNotifications = () => {
                           ? 'Student username changed'
                           : isRegistration ? 'New student registration' : 'Student profile updated'}</strong>
                       <span>{isContactRequest
-                        ? `${name} requested password assistance.`
+                        ? `${name} requested ${contactReason}.`
                         : isUsernameChange
                           ? `${name} changed their login username.`
                           : isRegistration

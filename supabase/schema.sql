@@ -55,7 +55,7 @@ create table public.admin_contact_requests (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
   requester_email text not null,
-  reason text not null default 'password_help' check (reason in ('password_help')),
+  reason text not null default 'password_help' check (reason in ('username_help', 'password_help')),
   status text not null default 'open' check (status in ('open', 'resolved')),
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
@@ -296,18 +296,24 @@ create policy "authenticated read program links" on public.program_universities
 create policy "admin manages program links" on public.program_universities
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
--- Public login-page request. Unknown emails intentionally receive the same response.
-create function public.request_admin_contact(submitted_email text)
-returns void
+-- Public login-page request. Unknown emails intentionally receive the same response
+-- as a newly-created request, so this endpoint cannot be used to discover accounts.
+create function public.request_admin_contact(submitted_email text, requested_reason text default 'password_help')
+returns text
 language plpgsql
 security definer set search_path = public, auth
 as $$
 declare
   normalized_email text := lower(trim(coalesce(submitted_email, '')));
+  normalized_reason text := lower(trim(coalesce(requested_reason, '')));
   matched_profile_id uuid;
 begin
+  if normalized_reason not in ('username_help', 'password_help') then
+    raise exception 'Choose username or password recovery';
+  end if;
+
   if length(normalized_email) < 3 or length(normalized_email) > 320 then
-    raise exception 'Enter a valid username or email address';
+    raise exception 'Enter a valid email address';
   end if;
 
   if normalized_email like '%@%' then
@@ -329,15 +335,20 @@ begin
     end if;
   end if;
 
-  if matched_profile_id is not null then
-    insert into public.admin_contact_requests (profile_id, requester_email)
-    values (matched_profile_id, normalized_email)
-    on conflict (profile_id) where status = 'open' do nothing;
+  if matched_profile_id is null then
+    return 'unknown';
+  end if;
 
-    if found then
-      insert into public.admin_notifications (type, student_id)
-      values ('admin_contact_requested', matched_profile_id);
-    end if;
+  insert into public.admin_contact_requests (profile_id, requester_email, reason)
+  values (matched_profile_id, normalized_email, normalized_reason)
+  on conflict (profile_id) where status = 'open' do nothing;
+
+  if found then
+    insert into public.admin_notifications (type, student_id, changed_fields)
+    values ('admin_contact_requested', matched_profile_id, array[normalized_reason]);
+    return 'created';
+  else
+    return 'existing';
   end if;
 end;
 $$;
@@ -358,9 +369,9 @@ begin
 end;
 $$;
 
-revoke all on function public.request_admin_contact(text) from public;
+revoke all on function public.request_admin_contact(text, text) from public;
 revoke all on function public.resolve_admin_contact_request(uuid) from public;
-grant execute on function public.request_admin_contact(text) to anon, authenticated;
+grant execute on function public.request_admin_contact(text, text) to anon, authenticated;
 grant execute on function public.resolve_admin_contact_request(uuid) to authenticated;
 alter publication supabase_realtime add table public.admin_contact_requests;
 
