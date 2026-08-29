@@ -18,6 +18,7 @@ import AdminRegistration from './pages/AdminRegistration'
 import AdminInvites from './pages/admin/AdminInvites'
 import AssessmentManagement from './pages/admin/AssessmentManagement'
 import Reports from './pages/admin/Reports'
+import ContactRequests from './pages/admin/ContactRequests'
 import ThemeToggle from './components/common/ThemeToggle'
 import './App.css'
 
@@ -144,6 +145,14 @@ function App() {
           <ProtectedRoute adminOnly>
             <AdminLayout>
               <Reports />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/requests" element={
+          <ProtectedRoute adminOnly>
+            <AdminLayout>
+              <ContactRequests />
             </AdminLayout>
           </ProtectedRoute>
         } />

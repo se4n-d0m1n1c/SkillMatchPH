@@ -1,19 +1,47 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined, MessagesSquare } from 'lucide-react';
+import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import AdminNotifications from './AdminNotifications';
 import '../../styles/Admin.css';
+
+const fetchOpenRequestCount = async () => {
+  const { count, error } = await supabase
+    .from('admin_contact_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'open');
+
+  if (error) return 0;
+  return count ?? 0;
+};
 
 const AdminLayout = ({ children }) => {
   const { signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: openRequestCount = 0, mutate: refreshRequestCount } = useSWR(
+    'admin-open-contact-request-count',
+    fetchOpenRequestCount,
+    { refreshInterval: 30_000 },
+  );
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-contact-request-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_contact_requests' }, () => refreshRequestCount())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshRequestCount]);
 
   // Prevent scroll when sidebar is open on mobile
   useEffect(() => {
@@ -32,6 +60,7 @@ const AdminLayout = ({ children }) => {
     { icon: <BookOpen size={20} />, label: 'Programs', path: '/admin/programs' },
     { icon: <ClipboardList size={20} />, label: 'Assessments', path: '/admin/assessments' },
     { icon: <ChartNoAxesCombined size={20} />, label: 'Reports', path: '/admin/reports' },
+    { icon: <MessagesSquare size={20} />, label: 'Contact Requests', path: '/admin/requests' },
     { icon: <UserPlus size={20} />, label: 'Admin Invites', path: '/admin/invites' },
   ];
 
@@ -108,6 +137,11 @@ const AdminLayout = ({ children }) => {
             >
               {item.icon}
               <span>{item.label}</span>
+              {item.path === '/admin/requests' && openRequestCount > 0 ? (
+                <span className="nav-request-badge" aria-label={`${openRequestCount} open contact requests`}>
+                  {openRequestCount > 99 ? '99+' : openRequestCount}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

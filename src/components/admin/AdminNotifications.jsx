@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, CheckCheck, UserPlus } from 'lucide-react';
+import { Bell, CheckCheck, MessageCircleQuestion, UserPen, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
@@ -7,14 +7,20 @@ import { supabase } from '../../lib/supabase';
 
 const fetchNotifications = async () => {
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, status, created_at')
-    .eq('role', 'student')
+    .from('admin_notifications')
+    .select('id, type, student_id, changed_fields, created_at, student:profiles!student_id(first_name, last_name)')
     .order('created_at', { ascending: false })
     .limit(15);
 
   if (error) throw error;
   return data ?? [];
+};
+
+const formatChangedFields = (fields = []) => {
+  if (fields.length === 0) return 'their profile information';
+  if (fields.length === 1) return `their ${fields[0]}`;
+  if (fields.length === 2) return `their ${fields[0]} and ${fields[1]}`;
+  return `their ${fields.slice(0, -1).join(', ')}, and ${fields.at(-1)}`;
 };
 
 const formatTime = (date) => {
@@ -50,7 +56,7 @@ const AdminNotifications = () => {
       .channel(`admin-notifications-${user?.id ?? 'anonymous'}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'profiles', filter: 'role=eq.student' },
+        { event: 'INSERT', schema: 'public', table: 'admin_notifications' },
         () => mutate(),
       )
       .subscribe();
@@ -130,24 +136,39 @@ const AdminNotifications = () => {
               <p className="notification-state">No notifications yet.</p>
             ) : (
               notifications.map((item) => {
-                const name = [item.first_name, item.last_name].filter(Boolean).join(' ') || 'A student';
+                const name = [item.student?.first_name, item.student?.last_name].filter(Boolean).join(' ') || 'A student';
                 const isUnread = !lastReadAt || new Date(item.created_at) > new Date(lastReadAt);
+                const isRegistration = item.type === 'student_registration';
+                const isContactRequest = item.type === 'admin_contact_requested';
+                const destination = isContactRequest
+                  ? `/admin/requests?student=${encodeURIComponent(item.student_id)}`
+                  : `/admin/students?student=${encodeURIComponent(item.student_id)}`;
 
                 return (
                   <Link
                     key={item.id}
-                    to={`/admin/students?student=${encodeURIComponent(item.id)}`}
-                    state={{ highlightStudentId: item.id }}
+                    to={destination}
+                    state={isContactRequest
+                      ? { highlightRequestStudentId: item.student_id }
+                      : { highlightStudentId: item.student_id }}
                     className={`notification-item ${isUnread ? 'unread' : ''}`}
                     onClick={() => {
                       markAllRead();
                       setOpen(false);
                     }}
                   >
-                    <span className="notification-icon"><UserPlus size={18} /></span>
+                    <span className="notification-icon">{isContactRequest
+                      ? <MessageCircleQuestion size={18} />
+                      : isRegistration ? <UserPlus size={18} /> : <UserPen size={18} />}</span>
                     <span className="notification-copy">
-                      <strong>New student registration</strong>
-                      <span>{name} submitted an account for review.</span>
+                      <strong>{isContactRequest
+                        ? 'Administrator contact requested'
+                        : isRegistration ? 'New student registration' : 'Student profile updated'}</strong>
+                      <span>{isContactRequest
+                        ? `${name} requested password assistance.`
+                        : isRegistration
+                          ? `${name} submitted an account for review.`
+                          : `${name} changed ${formatChangedFields(item.changed_fields)}.`}</span>
                       <time dateTime={item.created_at}>{formatTime(item.created_at)}</time>
                     </span>
                     {isUnread ? <span className="unread-dot" aria-label="Unread" /> : null}
@@ -157,8 +178,8 @@ const AdminNotifications = () => {
             )}
           </div>
 
-          <Link to="/admin/students" className="notification-footer" onClick={() => setOpen(false)}>
-            View student applications
+          <Link to="/admin/requests" className="notification-footer" onClick={() => setOpen(false)}>
+            View contact requests
           </Link>
         </section>
       ) : null}

@@ -806,16 +806,16 @@ export default function CareerAssessment() {
                         width: '24px',
                         height: '24px',
                         borderRadius: '50%',
-                        border: `2px solid ${isSelected ? 'var(--accent-teal)' : 'rgba(255, 255, 255, 0.3)'}`,
-                        background: isSelected ? 'var(--accent-teal)' : 'transparent',
+                        border: `2px solid ${isSelected ? 'var(--accent-teal)' : 'var(--text-secondary)'}`,
+                        background: isSelected ? 'var(--accent-teal)' : 'var(--field-bg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0
                       }}>
-                        {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0a0f1e' }} />}
+                        {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--bg-deep)' }} />}
                       </div>
-                      <span style={{ fontSize: '1rem', color: isSelected ? 'var(--text-primary)' : 'rgba(255, 255, 255, 0.85)', fontWeight: isSelected ? 600 : 400 }}>
+                      <span style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: isSelected ? 600 : 500 }}>
                         {opt}
                       </span>
                     </motion.div>

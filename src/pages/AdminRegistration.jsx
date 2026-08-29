@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, KeyRound, Loader2, Lock, Mail, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
   const { user, role } = useAuth();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', inviteCode: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -90,7 +91,26 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
                   <div className="input-group"><User className="input-icon" size={18} /><input required placeholder="Last name" value={form.lastName} onChange={update('lastName')} /></div>
                 </div>
                 <div className="input-group"><Mail className="input-icon" size={18} /><input required type="email" placeholder="Work email" value={form.email} onChange={update('email')} /></div>
-                <div className="input-group"><Lock className="input-icon" size={18} /><input required minLength="8" type="password" placeholder="Password (at least 8 characters)" value={form.password} onChange={update('password')} /></div>
+                <div className="input-group has-password-toggle">
+                  <Lock className="input-icon" size={18} />
+                  <input
+                    required
+                    minLength="8"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password (at least 8 characters)"
+                    value={form.password}
+                    onChange={update('password')}
+                  />
+                  <button
+                    type="button"
+                    className="password-visibility-toggle"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <div className="input-group"><KeyRound className="input-icon" size={18} /><input required autoCapitalize="characters" placeholder="SMPH-XXXXXXXXXXXX" value={form.inviteCode} onChange={update('inviteCode')} /></div>
                 {error ? <p className="error-message">{error}</p> : null}
                 <button className="submit-btn" type="submit" disabled={loading}>

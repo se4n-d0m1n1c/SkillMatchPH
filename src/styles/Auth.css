@@ -167,6 +167,36 @@
   appearance: none;
 }
 
+.input-group.has-password-toggle input {
+  padding-right: 3rem;
+}
+
+.password-visibility-toggle {
+  position: absolute;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.password-visibility-toggle:hover {
+  color: var(--text-primary);
+  background: var(--field-bg-hover);
+}
+
+.password-visibility-toggle:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 1px;
+}
+
 .input-group input:focus, .input-group select:focus {
   outline: none;
   border-color: var(--accent-teal);
@@ -218,15 +248,39 @@
   line-height: 1.5;
 }
 
-.password-help a {
+.password-help-link {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--accent-teal);
-  text-decoration: none;
-  opacity: 0.8;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  opacity: 0.85;
+  cursor: pointer;
   transition: opacity 0.2s;
 }
 
-.password-help a:hover {
+.password-help-link:hover:not(:disabled),
+.password-help-link:focus-visible {
   opacity: 1;
+}
+
+.password-help-link:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.password-help-link:disabled {
+  cursor: wait;
+}
+
+.contact-success-message {
+  margin: 0;
+  color: var(--success);
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .submit-btn {

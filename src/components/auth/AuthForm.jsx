@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 // Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
 const STRANDS_MAP = {
   'Academic': ['STEM', 'ABM', 'HUMSS', 'GAS'],
-  'Technical-Vocational-Livelihood (TVL)': ['ICT', 'HE', 'IA', 'Agri-Fishery'],
 };
 
 const INITIAL_FORM = {
@@ -23,12 +23,14 @@ const INITIAL_FORM = {
 const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
   const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [contactingAdmin, setContactingAdmin] = useState(false);
   const [error, setError] = useState(null);
+  const [contactMessage, setContactMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
 
   // Derived state — no useEffect needed (rerender-derived-state-no-effect)
   const availableStrands = STRANDS_MAP[formData.shsTrack];
-  const adminContactEmail = import.meta.env.VITE_ADMIN_CONTACT_EMAIL;
 
   // Use functional setState to avoid stale closures (rerender-functional-setstate)
   const handleChange = (field) => (e) => {
@@ -41,6 +43,28 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
       }
       return next;
     });
+  };
+
+  const requestAdminContact = async () => {
+    const email = formData.email.trim();
+    setContactMessage('');
+    setError(null);
+
+    if (!email) {
+      setError('Enter your account email before contacting an administrator.');
+      return;
+    }
+
+    setContactingAdmin(true);
+    const { error: requestError } = await supabase.rpc('request_admin_contact', { submitted_email: email });
+    setContactingAdmin(false);
+
+    if (requestError) {
+      setError(requestError.message || 'Unable to send your request. Please try again.');
+      return;
+    }
+
+    setContactMessage('If an account matches that email, a school administrator has been notified.');
   };
 
   const handleSubmit = async (e) => {
@@ -123,7 +147,6 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
                       <Briefcase className="input-icon" size={18} />
                       <select required value={formData.shsTrack} onChange={handleChange('shsTrack')} className="custom-select">
                         <option value="Academic">Academic Track</option>
-                        <option value="Technical-Vocational-Livelihood (TVL)">TVL Track</option>
                       </select>
                     </div>
                     <div className="input-group">
@@ -142,22 +165,41 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
                 <Mail className="input-icon" size={18} />
                 <input type="email" placeholder="Email Address" required value={formData.email} onChange={handleChange('email')} />
               </div>
-              <div className={`input-group ${!isLogin ? 'full-width' : ''}`}>
+              <div className={`input-group has-password-toggle ${!isLogin ? 'full-width' : ''}`}>
                 <Lock className="input-icon" size={18} />
-                <input type="password" placeholder="Password" required value={formData.password} onChange={handleChange('password')} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange('password')}
+                />
+                <button
+                  type="button"
+                  className="password-visibility-toggle"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               {error ? <p className="error-message full-width">{error}</p> : null}
+              {contactMessage ? <p className="contact-success-message full-width">{contactMessage}</p> : null}
 
               {isLogin ? (
                 <div className="form-footer">
                   <span className="password-help">
                     Need to change your password?{' '}
-                    {adminContactEmail ? (
-                      <a href={`mailto:${adminContactEmail}`}>Contact your administrator</a>
-                    ) : (
-                      'Contact your school administrator.'
-                    )}
+                    <button
+                      type="button"
+                      className="password-help-link"
+                      onClick={requestAdminContact}
+                      disabled={contactingAdmin}
+                    >
+                      {contactingAdmin ? 'Sending request…' : 'Contact your school administrator'}
+                    </button>
                   </span>
                 </div>
               ) : null}
