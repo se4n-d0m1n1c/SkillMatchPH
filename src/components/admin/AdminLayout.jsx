@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined, MessagesSquare, UserCog } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined, MessagesSquare, UserCog, Bell } from 'lucide-react';
 import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -60,6 +60,7 @@ const AdminLayout = ({ children }) => {
     { icon: <BookOpen size={20} />, label: 'Programs', path: '/admin/programs' },
     { icon: <ClipboardList size={20} />, label: 'Assessments', path: '/admin/assessments' },
     { icon: <ChartNoAxesCombined size={20} />, label: 'Reports', path: '/admin/reports' },
+    { icon: <Bell size={20} />, label: 'Notifications', path: '/admin/notifications' },
     { icon: <MessagesSquare size={20} />, label: 'Contact Requests', path: '/admin/requests' },
     { icon: <UserPlus size={20} />, label: 'Admin Invites', path: '/admin/invites' },
     { icon: <UserCog size={20} />, label: 'My Profile', path: '/admin/profile' },

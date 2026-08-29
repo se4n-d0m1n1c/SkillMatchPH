@@ -8,6 +8,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 
 // ─── Module-level constants (rendering-hoist-jsx) ────────────────────────────
 const EDIT_FIELDS = [
+  { key: 'username', label: 'Login Username', type: 'text', isUsername: true },
   { key: 'first_name', label: 'First Name', type: 'text' },
   { key: 'last_name', label: 'Last Name', type: 'text' },
   { key: 'student_no', label: 'Student No.', type: 'text' },
@@ -76,13 +77,23 @@ const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
     setSaving(true);
     setError(null);
     try {
+      const normalizedUsername = form.username.trim().toLowerCase();
+      if (normalizedUsername !== student.username) {
+        const { error: usernameError } = await supabase.rpc('update_student_username', {
+          target_student_id: student.id,
+          requested_username: normalizedUsername,
+        });
+        if (usernameError) throw usernameError;
+      }
+
+      const { username: _username, ...profileUpdates } = form;
       const { error: dbError } = await supabase
         .from('profiles')
-        .update(form)
+        .update(profileUpdates)
         .eq('id', student.id);
 
       if (dbError) throw dbError;
-      onSave({ ...student, ...form });
+      onSave({ ...student, ...profileUpdates, username: normalizedUsername });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,7 +124,7 @@ const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form-grid">
-          {EDIT_FIELDS.map(({ key, label, type, options }, idx) => (
+          {EDIT_FIELDS.map(({ key, label, type, options, isUsername }, idx) => (
             <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }} className="form-group">
               <label htmlFor={`edit-${key}`}>{label}</label>
               {type === 'select' ? (
@@ -135,6 +146,10 @@ const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
                   id={`edit-${key}`}
                   type={type}
                   value={form[key]}
+                  required
+                  minLength={isUsername ? 3 : undefined}
+                  maxLength={isUsername ? 30 : undefined}
+                  pattern={isUsername ? '[A-Za-z0-9][A-Za-z0-9._-]{2,29}' : undefined}
                   onChange={(e) => handleChange(key, e.target.value)}
                 />
               )}

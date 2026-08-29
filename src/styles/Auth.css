@@ -281,6 +281,20 @@
   color: var(--success);
   font-size: 0.875rem;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.admin-contact-card {
+  width: 100%;
+  padding: 2.5rem;
+}
+
+.admin-contact-card .auth-form {
+  display: grid;
+  gap: 1rem;
 }
 
 .submit-btn {

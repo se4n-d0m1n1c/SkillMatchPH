@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Loader2, Hash, GraduationCap, Briefcase, Eye, EyeOff, AtSign } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
 
 // Hoisted to module level — not recreated on every render (rendering-hoist-jsx)
 const STRANDS_MAP = {
@@ -22,12 +21,10 @@ const INITIAL_FORM = {
   shsStrand: 'STEM',
 };
 
-const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
+const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact }) => {
   const { signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [contactingAdmin, setContactingAdmin] = useState(false);
   const [error, setError] = useState(null);
-  const [contactMessage, setContactMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
 
@@ -45,28 +42,6 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
       }
       return next;
     });
-  };
-
-  const requestAdminContact = async () => {
-    const identifier = formData.identifier.trim();
-    setContactMessage('');
-    setError(null);
-
-    if (!identifier.includes('@')) {
-      setError('Enter your account email in the login field before contacting an administrator.');
-      return;
-    }
-
-    setContactingAdmin(true);
-    const { error: requestError } = await supabase.rpc('request_admin_contact', { submitted_email: identifier });
-    setContactingAdmin(false);
-
-    if (requestError) {
-      setError(requestError.message || 'Unable to send your request. Please try again.');
-      return;
-    }
-
-    setContactMessage('If an account matches that email, a school administrator has been notified.');
   };
 
   const handleSubmit = async (e) => {
@@ -92,9 +67,17 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
       }
     } catch (err) {
       const message = err.message || '';
-      setError(!isLogin && (message.includes('Database error') || message.includes('duplicate key'))
-        ? 'That username is unavailable. Choose another username.'
-        : message || 'Unable to authenticate. Please try again.');
+      if (isLogin) {
+        setError(message || 'Unable to authenticate. Please try again.');
+      } else if (/duplicate key.*username/i.test(message)) {
+        setError('That username is unavailable. Choose another username.');
+      } else if (/duplicate key.*student|student_no/i.test(message)) {
+        setError('That student number is already in use.');
+      } else if (/duplicate key|unique constraint|Database error/i.test(message)) {
+        setError('Sign-up failed. The email, username, or student number may already be in use. Please try different details.');
+      } else {
+        setError(message || 'Unable to create your account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -223,8 +206,6 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
               </div>
 
               {error ? <p className="error-message full-width">{error}</p> : null}
-              {contactMessage ? <p className="contact-success-message full-width">{contactMessage}</p> : null}
-
               {isLogin ? (
                 <div className="form-footer">
                   <span className="password-help">
@@ -232,10 +213,9 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration }) => {
                     <button
                       type="button"
                       className="password-help-link"
-                      onClick={requestAdminContact}
-                      disabled={contactingAdmin}
+                      onClick={showAdminContact}
                     >
-                      {contactingAdmin ? 'Sending request…' : 'Contact your school administrator'}
+                      Contact your school administrator
                     </button>
                   </span>
                 </div>

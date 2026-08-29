@@ -106,15 +106,30 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+  provided_username text := nullif(lower(trim(new.raw_user_meta_data ->> 'username')), '');
+  provided_student_no text := nullif(trim(new.raw_user_meta_data ->> 'student_no'), '');
 begin
+  if provided_username is not null and exists (
+    select 1 from public.profiles where lower(username) = provided_username
+  ) then
+    raise exception 'That username is unavailable. Choose another username.';
+  end if;
+
+  if provided_student_no is not null and exists (
+    select 1 from public.profiles where lower(student_no) = lower(provided_student_no)
+  ) then
+    raise exception 'That student number is already in use.';
+  end if;
+
   insert into public.profiles (
     id, username, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
   ) values (
     new.id,
-    nullif(lower(trim(new.raw_user_meta_data ->> 'username')), ''),
+    provided_username,
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
-    coalesce(new.raw_user_meta_data ->> 'student_no', new.id::text),
+    coalesce(provided_student_no, new.id::text),
     coalesce(nullif(new.raw_user_meta_data ->> 'grade_level', '')::smallint, 11),
     coalesce(new.raw_user_meta_data ->> 'shs_track', 'Academic'),
     coalesce(new.raw_user_meta_data ->> 'shs_strand', 'STEM'),
@@ -373,6 +388,34 @@ $$;
 
 revoke all on function public.update_own_admin_username(text) from public;
 grant execute on function public.update_own_admin_username(text) to authenticated;
+
+create function public.update_student_username(target_student_id uuid, requested_username text)
+returns text
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  normalized_username text := lower(trim(coalesce(requested_username, '')));
+begin
+  if not public.is_admin() then
+    raise exception 'Only administrators can update student usernames';
+  end if;
+  if normalized_username !~ '^[a-z0-9][a-z0-9._-]{2,29}$' then
+    raise exception 'Username must be 3-30 characters and use only letters, numbers, dots, underscores, or hyphens';
+  end if;
+  if not exists (select 1 from public.profiles where id = target_student_id and role = 'student') then
+    raise exception 'Student account not found';
+  end if;
+  update public.profiles set username = normalized_username
+  where id = target_student_id and role = 'student';
+  return normalized_username;
+exception when unique_violation then
+  raise exception 'That username is already in use';
+end;
+$$;
+
+revoke all on function public.update_student_username(uuid, text) from public;
+grant execute on function public.update_student_username(uuid, text) to authenticated;
 
 -- Used by the Admin > Student Management delete action. It also removes auth.users.
 create function public.delete_student(target_user_id uuid)
