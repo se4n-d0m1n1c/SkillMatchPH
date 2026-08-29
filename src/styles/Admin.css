@@ -1890,6 +1890,66 @@
 
 .request-resolve-btn:disabled { opacity: 0.65; cursor: wait; }
 
+/* ── Admin Profile ──────────────────────────────────── */
+.admin-profile-card {
+  max-width: 680px;
+  display: grid;
+  gap: 2rem;
+}
+
+.admin-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-profile-avatar {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent-teal) 12%, transparent);
+  color: var(--accent-teal);
+}
+
+.admin-profile-identity h2 { margin: 0; }
+.admin-profile-identity p { margin: 0.25rem 0 0; color: var(--text-secondary); }
+.admin-profile-form { display: grid; gap: 0.8rem; }
+.admin-profile-form label { color: var(--text-primary); font-weight: 700; }
+.admin-profile-form small { color: var(--text-secondary); }
+
+.admin-profile-input {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--field-bg);
+  color: var(--text-secondary);
+}
+
+.admin-profile-input:focus-within {
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-teal) 12%, transparent);
+}
+
+.admin-profile-input input {
+  width: 100%;
+  padding: 0.85rem 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.admin-profile-form .invite-create-btn { justify-self: start; margin-top: 0.4rem; }
+.admin-profile-success { display: flex; align-items: center; gap: 0.45rem; margin: 0; color: var(--success); }
+
 /* ── Buttons (Icon) ─────────────────────────────────── */
 .icon-btn {
   width: 32px;

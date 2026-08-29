@@ -495,7 +495,10 @@ const StudentManagement = () => {
     if (!lowerQuery) return students;
     return students.filter((student) => {
       const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.toLowerCase();
-      return fullName.includes(lowerQuery) || student.id.toLowerCase().includes(lowerQuery);
+      return fullName.includes(lowerQuery)
+        || student.id.toLowerCase().includes(lowerQuery)
+        || student.username?.toLowerCase().includes(lowerQuery)
+        || student.student_no?.toLowerCase().includes(lowerQuery);
     });
   }, [students, deferredSearchTerm]);
 
@@ -521,7 +524,8 @@ const StudentManagement = () => {
           <thead>
             <tr>
               <th>Name</th>
-              <th>User ID</th>
+              <th>Username</th>
+              <th>Student No.</th>
               <th>Joined Date</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -541,7 +545,8 @@ const StudentManagement = () => {
                   transition={{ duration: 0.2, delay: i * 0.02 }}
                 >
                   <td style={{ fontWeight: 600 }}>{student.first_name} {student.last_name}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'monospace' }}>{student.id.slice(0, 8)}...</td>
+                  <td style={{ color: 'var(--accent-teal)', fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 600 }}>{student.username || 'Not assigned'}</td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{student.student_no}</td>
                   <td>{new Date(student.created_at).toLocaleDateString()}</td>
                   <td>
                     <span className={`status-badge ${student.status}`}>
@@ -566,7 +571,7 @@ const StudentManagement = () => {
             </AnimatePresence>
             {!isLoading && filteredStudents.length === 0 && (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '10rem', color: 'var(--text-secondary)' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '10rem', color: 'var(--text-secondary)' }}>
                   <Search size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
                   <p>No students found matching your search.</p>
                 </td>

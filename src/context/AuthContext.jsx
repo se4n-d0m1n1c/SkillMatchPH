@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, profileData) => {
     const metadata = {
+      username: profileData.username.trim().toLowerCase(),
       first_name: profileData.firstName,
       last_name: profileData.lastName,
       student_no: profileData.studentNo,
@@ -112,8 +113,29 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
-  const signIn = (email, password) => {
-    return supabase.auth.signInWithPassword({ email, password });
+  const signIn = async (identifier, password) => {
+    const normalizedIdentifier = identifier.trim();
+
+    const { data, error } = await supabase.functions.invoke('username-login', {
+      body: { username: normalizedIdentifier, password },
+    });
+    if (error) {
+      let message = data?.error;
+      if (!message && error.context) {
+        try {
+          message = (await error.context.json()).error;
+        } catch {
+          // The function may be unreachable or return a non-JSON platform error.
+        }
+      }
+      return { data: null, error: new Error(message || 'Invalid username or password') };
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+    });
+    return { data: sessionData, error: sessionError };
   };
 
   const signOut = async () => {

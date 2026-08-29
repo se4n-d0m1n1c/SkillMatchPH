@@ -24,4 +24,11 @@
 .profile-form-message.error { color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-border); }
 .profile-form-message.success { color: var(--success); background: rgba(74,222,128,.1); }
 .profile-editor-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); }
+.profile-inline-action { display: inline-flex; align-items: center; gap: .3rem; margin-top: .45rem; padding: 0; border: 0; background: none; color: var(--accent-teal); font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.username-editor { width: min(520px, 100%); }
+.username-editor-note { margin: 0 0 1.2rem; color: var(--text-secondary); font-size: .88rem; }
+.username-editor-field { display: grid; gap: .45rem; margin-top: 1rem; color: var(--text-secondary); font-size: .82rem; font-weight: 700; }
+.username-editor-field > div { display: flex; align-items: center; gap: .65rem; padding: 0 .8rem; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--field-bg); }
+.username-editor-field input { width: 100%; padding: .75rem 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; }
+.username-editor-field button { display: grid; place-items: center; padding: .35rem; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
 @media (max-width: 600px) { .profile-page-header { align-items: flex-start; margin-bottom: 2rem; } .profile-form-grid { grid-template-columns: 1fr; } .avatar-editor { align-items: flex-start; } }

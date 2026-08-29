@@ -18,9 +18,10 @@ set search_path = public
 as $$
 begin
   insert into public.profiles (
-    id, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
+    id, username, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
   ) values (
     new.id,
+    nullif(lower(trim(new.raw_user_meta_data ->> 'username')), ''),
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
     coalesce(new.raw_user_meta_data ->> 'student_no', new.id::text),

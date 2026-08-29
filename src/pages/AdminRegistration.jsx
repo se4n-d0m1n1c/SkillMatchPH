@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AtSign, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,7 @@ import '../styles/Auth.css';
 
 const AdminRegistration = ({ embedded = false, onBack }) => {
   const { user, role } = useAuth();
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', inviteCode: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', username: '', email: '', password: '', inviteCode: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -29,6 +29,7 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
       password: form.password,
       options: {
         data: {
+          username: form.username.trim().toLowerCase(),
           first_name: form.firstName.trim(),
           last_name: form.lastName.trim(),
           admin_invite_code: form.inviteCode.trim().toUpperCase(),
@@ -38,9 +39,12 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
 
     setLoading(false);
     if (signUpError) {
-      setError(signUpError.message.includes('Database error')
-        ? 'The invite code is invalid, expired, or has already been used.'
-        : signUpError.message);
+      const message = signUpError.message || '';
+      setError(message.includes('duplicate key')
+        ? 'That username is unavailable. Choose another username.'
+        : message.includes('Database error')
+          ? 'The username is unavailable, or the invite code is invalid, expired, or already used.'
+          : message);
       return;
     }
 
@@ -90,7 +94,21 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
                   <div className="input-group"><User className="input-icon" size={18} /><input required placeholder="First name" value={form.firstName} onChange={update('firstName')} /></div>
                   <div className="input-group"><User className="input-icon" size={18} /><input required placeholder="Last name" value={form.lastName} onChange={update('lastName')} /></div>
                 </div>
-                <div className="input-group"><Mail className="input-icon" size={18} /><input required type="email" placeholder="Work email" value={form.email} onChange={update('email')} /></div>
+                <div className="input-group">
+                  <AtSign className="input-icon" size={18} />
+                  <input
+                    required
+                    minLength="3"
+                    maxLength="30"
+                    pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,29}"
+                    title="Use 3–30 letters, numbers, dots, underscores, or hyphens."
+                    autoComplete="username"
+                    placeholder="Username"
+                    value={form.username}
+                    onChange={update('username')}
+                  />
+                </div>
+                <div className="input-group"><Mail className="input-icon" size={18} /><input required type="email" autoComplete="email" placeholder="Work email" value={form.email} onChange={update('email')} /></div>
                 <div className="input-group has-password-toggle">
                   <Lock className="input-icon" size={18} />
                   <input

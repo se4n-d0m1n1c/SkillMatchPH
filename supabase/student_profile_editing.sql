@@ -45,6 +45,7 @@ begin
     new.id := old.id;
     new.role := old.role;
     new.status := old.status;
+    new.username := old.username;
     new.created_at := old.created_at;
   end if;
   return new;

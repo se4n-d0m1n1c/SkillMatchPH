@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked, Target, ChevronRight, MapPin, Crosshair, Pencil } from 'lucide-react';
+import { Mail, GraduationCap, BookOpen, Fingerprint, Activity, BookMarked, Target, ChevronRight, MapPin, Crosshair, Pencil, AtSign } from 'lucide-react';
 import { getSavedPinnedLocation, savePinnedLocation } from '../../data/locationsData';
 import GrabLocationPickerModal from '../../components/common/GrabLocationPickerModal';
 import ProfileEditor from '../../components/student/ProfileEditor';
+import UsernameEditor from '../../components/student/UsernameEditor';
 import '../../styles/Profile.css';
 
 // 1. Hoist static animation variants to module scope to prevent recreation on re-render (rendering-hoist-jsx)
@@ -25,6 +26,7 @@ const ITEM_VARIANTS = {
 
 // 2. Hoist static mapping configuration for rendering to reduce JSX bloat inside the component (rendering-hoist-jsx)
 const PROFILE_FIELDS = [
+  { id: 'username', icon: <AtSign size={20} />, label: 'Login Username', getValue: (_, profile) => profile?.username, isUsername: true },
   { id: 'email', icon: <Mail size={20} />, label: 'Email Address', getValue: (user, _) => user?.email, isEmail: true },
   { id: 'studentNo', icon: <Fingerprint size={20} />, label: 'Student Number', getValue: (_, profile) => profile?.student_no },
   { id: 'grade', icon: <GraduationCap size={20} />, label: 'Grade Level', getValue: (_, profile) => profile?.grade_level ? `Grade ${profile.grade_level}` : null },
@@ -39,6 +41,7 @@ const StudentProfile = () => {
   const [pinnedLocation, setPinnedLocation] = useState(() => getSavedPinnedLocation(user?.id));
   const [showMapModal, setShowMapModal] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showUsernameEditor, setShowUsernameEditor] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
@@ -166,7 +169,7 @@ const StudentProfile = () => {
                     <div style={{ color: 'var(--accent-teal)', padding: '0.5rem', background: 'rgba(0,242,254,0.1)', borderRadius: '8px' }}>
                       {field.icon}
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{field.label}</p>
                       {field.isStatus ? (
                         <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500, textTransform: 'capitalize' }}>
@@ -186,6 +189,11 @@ const StudentProfile = () => {
                           {value || 'N/A'}
                         </p>
                       )}
+                      {field.isUsername ? (
+                        <button type="button" className="profile-inline-action" onClick={() => setShowUsernameEditor(true)}>
+                          <Pencil size={13} /> Change username
+                        </button>
+                      ) : null}
                     </div>
                   </motion.div>
                 );
@@ -306,6 +314,14 @@ const StudentProfile = () => {
           />
         )}
       </AnimatePresence>
+
+      {showUsernameEditor ? (
+        <UsernameEditor
+          profile={profile}
+          onSaved={refreshProfile}
+          onClose={() => setShowUsernameEditor(false)}
+        />
+      ) : null}
 
       {showProfileEditor ? (
         <ProfileEditor

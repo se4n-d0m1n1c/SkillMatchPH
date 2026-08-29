@@ -140,6 +140,7 @@ const AdminNotifications = () => {
                 const isUnread = !lastReadAt || new Date(item.created_at) > new Date(lastReadAt);
                 const isRegistration = item.type === 'student_registration';
                 const isContactRequest = item.type === 'admin_contact_requested';
+                const isUsernameChange = item.type === 'student_username_changed';
                 const destination = isContactRequest
                   ? `/admin/requests?student=${encodeURIComponent(item.student_id)}`
                   : `/admin/students?student=${encodeURIComponent(item.student_id)}`;
@@ -163,12 +164,16 @@ const AdminNotifications = () => {
                     <span className="notification-copy">
                       <strong>{isContactRequest
                         ? 'Administrator contact requested'
-                        : isRegistration ? 'New student registration' : 'Student profile updated'}</strong>
+                        : isUsernameChange
+                          ? 'Student username changed'
+                          : isRegistration ? 'New student registration' : 'Student profile updated'}</strong>
                       <span>{isContactRequest
                         ? `${name} requested password assistance.`
-                        : isRegistration
-                          ? `${name} submitted an account for review.`
-                          : `${name} changed ${formatChangedFields(item.changed_fields)}.`}</span>
+                        : isUsernameChange
+                          ? `${name} changed their login username.`
+                          : isRegistration
+                            ? `${name} submitted an account for review.`
+                            : `${name} changed ${formatChangedFields(item.changed_fields)}.`}</span>
                       <time dateTime={item.created_at}>{formatTime(item.created_at)}</time>
                     </span>
                     {isUnread ? <span className="unread-dot" aria-label="Unread" /> : null}

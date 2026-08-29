@@ -129,9 +129,10 @@ begin
     end if;
 
     insert into public.profiles (
-      id, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
+      id, username, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
     ) values (
       new.id,
+      nullif(lower(trim(new.raw_user_meta_data ->> 'username')), ''),
       coalesce(nullif(trim(new.raw_user_meta_data ->> 'first_name'), ''), 'Admin'),
       coalesce(nullif(trim(new.raw_user_meta_data ->> 'last_name'), ''), 'User'),
       'ADMIN-' || new.id::text,
@@ -147,9 +148,10 @@ begin
     where id = matched_invite_id;
   else
     insert into public.profiles (
-      id, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
+      id, username, first_name, last_name, student_no, grade_level, shs_track, shs_strand, role, status
     ) values (
       new.id,
+      nullif(lower(trim(new.raw_user_meta_data ->> 'username')), ''),
       coalesce(new.raw_user_meta_data ->> 'first_name', ''),
       coalesce(new.raw_user_meta_data ->> 'last_name', ''),
       coalesce(new.raw_user_meta_data ->> 'student_no', new.id::text),
