@@ -1777,10 +1777,10 @@
 .form-group select, 
 .form-group textarea {
   padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--field-bg);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  color: #fff;
+  color: var(--text-primary);
   font-family: inherit;
   font-size: 0.95rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1790,7 +1790,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--accent-teal);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--field-bg-hover);
   outline: none;
   box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.1);
   transform: translateY(-1px);
@@ -1809,10 +1809,10 @@
   justify-content: space-between;
   gap: 0.6rem;
   padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--field-bg);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  color: #fff;
+  color: var(--text-primary);
   font: inherit;
   font-size: 0.95rem;
   cursor: pointer;
@@ -1822,7 +1822,7 @@
 
 .menu-select-trigger:hover {
   border-color: rgba(0, 242, 254, 0.45);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--field-bg-hover);
 }
 
 .menu-select-trigger:focus-visible {
