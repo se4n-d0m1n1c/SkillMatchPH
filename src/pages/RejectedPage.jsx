@@ -8,7 +8,9 @@ const RejectedPage = () => {
   // Bug fix: was using full_name — now uses split fields
   const firstName = user?.user_metadata?.first_name;
   const lastName = user?.user_metadata?.last_name;
-  const displayName = firstName ? `${firstName} ${lastName || ''}` : 'Student';
+  const displayName = firstName
+    ? `${firstName} ${lastName || ''}`
+    : user?.user_metadata?.username || 'Student';
 
   return (
     <div className="auth-page">
@@ -36,7 +38,7 @@ const RejectedPage = () => {
 
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Account Rejected</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
-          Hello, <strong style={{ color: '#fff' }}>{displayName}</strong>.<br />
+          Hello, <strong style={{ color: 'var(--text-primary)' }}>{displayName}</strong>.<br />
           We regret to inform you that your account application has been declined.
         </p>
 
