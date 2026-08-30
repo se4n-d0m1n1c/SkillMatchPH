@@ -1796,6 +1796,13 @@
   transform: translateY(-1px);
 }
 
+.form-group .readonly-field {
+  color: var(--text-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+  user-select: none;
+}
+
 .modal-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

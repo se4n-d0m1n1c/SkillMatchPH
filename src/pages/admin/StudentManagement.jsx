@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import useSWR from 'swr';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import MenuSelect from '../../components/common/MenuSelect';
 
 // ─── Module-level constants (rendering-hoist-jsx) ────────────────────────────
 const EDIT_FIELDS = [
@@ -86,14 +87,15 @@ const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
         if (usernameError) throw usernameError;
       }
 
-      const { username: _username, ...profileUpdates } = form;
+      // Admin can only edit status here (username handled above); other
+      // profile fields are read-only in this modal.
       const { error: dbError } = await supabase
         .from('profiles')
-        .update(profileUpdates)
+        .update({ status: form.status })
         .eq('id', student.id);
 
       if (dbError) throw dbError;
-      onSave({ ...student, ...profileUpdates, username: normalizedUsername });
+      onSave({ ...student, status: form.status, username: normalizedUsername });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -124,37 +126,40 @@ const EditModal = memo(forwardRef(({ student, onClose, onSave }, ref) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form-grid">
-          {EDIT_FIELDS.map(({ key, label, type, options, isUsername }, idx) => (
-            <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }} className="form-group">
-              <label htmlFor={`edit-${key}`}>{label}</label>
-              {type === 'select' ? (
-                <select
-                  id={`edit-${key}`}
-                  value={form[key]}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  style={{ width: '100%', cursor: 'pointer' }}
-                >
-                  {options.map((opt) => (
-                    <option key={opt} value={opt} style={{ background: '#0a0f1e' }}>
-                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  ref={idx === 0 ? firstInputRef : null}
-                  id={`edit-${key}`}
-                  type={type}
-                  value={form[key]}
-                  required
-                  minLength={isUsername ? 3 : undefined}
-                  maxLength={isUsername ? 30 : undefined}
-                  pattern={isUsername ? '[A-Za-z0-9][A-Za-z0-9._-]{2,29}' : undefined}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
+          {EDIT_FIELDS.map(({ key, label, type, options, isUsername }, idx) => {
+            const editable = key === 'username' || key === 'status';
+            const readOnly = !editable;
+            return (
+              <div key={key} style={{ gridColumn: type === 'select' ? '1 / -1' : 'auto' }} className="form-group">
+                <label htmlFor={`edit-${key}`}>{label}</label>
+                {type === 'select' ? (
+                  <MenuSelect
+                    id={`edit-${key}`}
+                    label={label}
+                    value={form[key]}
+                    onChange={(value) => handleChange(key, value)}
+                    options={options.map((opt) => ({ value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) }))}
+                  />
+                ) : (
+                  <input
+                    ref={idx === 0 ? firstInputRef : null}
+                    id={`edit-${key}`}
+                    type={type}
+                    value={form[key]}
+                    required={editable}
+                    readOnly={readOnly}
+                    disabled={readOnly}
+                    tabIndex={readOnly ? -1 : undefined}
+                    className={readOnly ? 'readonly-field' : undefined}
+                    minLength={isUsername ? 3 : undefined}
+                    maxLength={isUsername ? 30 : undefined}
+                    pattern={isUsername ? '[A-Za-z0-9][A-Za-z0-9._-]{2,29}' : undefined}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                  />
+                )}
+              </div>
+            );
+          })}
 
           {error && (
             <p style={{ gridColumn: '1 / -1', margin: 0, color: '#ff4d4d', fontSize: '0.85rem', background: 'rgba(255, 77, 77, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>
