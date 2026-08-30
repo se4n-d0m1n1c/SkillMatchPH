@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
+import MenuSelect from '../../components/common/MenuSelect';
 
 // ─── Constants & Fetchers (rendering-hoist-jsx & rerender-memo-with-default-value)
 const CATEGORIES = ['Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
@@ -163,25 +164,26 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
           <div className="modal-form-grid">
             <div className="form-group">
               <label htmlFor="prog-category">Category</label>
-              <select
+              <MenuSelect
                 id="prog-category"
+                label="Category"
                 value={formData.category}
-                onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              >
-                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
+                onChange={category => setFormData(prev => ({ ...prev, category }))}
+                options={CATEGORIES}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="prog-icon">Icon</label>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <select
-                  id="prog-icon"
-                  value={formData.icon_name}
-                  onChange={e => setFormData(prev => ({ ...prev, icon_name: e.target.value }))}
-                  style={{ flex: 1 }}
-                >
-                  {Object.keys(ICON_MAP).map(icon => <option key={icon} value={icon}>{icon}</option>)}
-                </select>
+                <div style={{ flex: 1 }}>
+                  <MenuSelect
+                    id="prog-icon"
+                    label="Icon"
+                    value={formData.icon_name}
+                    onChange={icon_name => setFormData(prev => ({ ...prev, icon_name }))}
+                    options={Object.keys(ICON_MAP)}
+                  />
+                </div>
                 <div style={{ width: '45px', height: '45px', borderRadius: '10px', background: 'rgba(0,242,254,0.1)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {ICON_MAP[formData.icon_name]}
                 </div>
