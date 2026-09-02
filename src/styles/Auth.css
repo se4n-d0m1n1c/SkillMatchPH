@@ -506,6 +506,101 @@
 }
 
 /* Responsive Refinement */
+.email-verification-card {
+  text-align: center;
+}
+
+.email-verification-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent-teal);
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+}
+
+.email-verification-card .form-header strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.email-verification-copy,
+.email-verification-status {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.email-verification-status {
+  padding: 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: var(--field-bg);
+  font-size: 0.88rem;
+}
+
+.verification-code-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.verification-code-input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--field-bg);
+  color: var(--text-primary);
+  font: 700 1.65rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-align: center;
+  letter-spacing: 0.3em;
+  caret-color: var(--accent-teal);
+}
+
+.verification-code-input:focus {
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.1);
+}
+
+.verification-resend-link,
+.verification-back-link {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--accent-teal);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.verification-resend-link {
+  margin-top: 0.75rem;
+}
+
+.verification-back-link {
+  margin-top: 0.15rem;
+}
+
+.verification-resend-link:hover,
+.verification-back-link:hover {
+  text-decoration: underline;
+}
+
+.verification-resend-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 968px) {
   .auth-page {
     padding: 1rem;

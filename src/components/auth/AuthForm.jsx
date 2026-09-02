@@ -22,9 +22,13 @@ const INITIAL_FORM = {
 };
 
 const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact }) => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, verifySignupCode, resendVerificationEmail } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+  const [resendStatus, setResendStatus] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
 
@@ -54,7 +58,7 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact
         const { error } = await signIn(formData.identifier, formData.password);
         if (error) throw error;
       } else {
-        const { error } = await signUp(formData.email, formData.password, {
+        const { data, error } = await signUp(formData.email, formData.password, {
           username: formData.username,
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -64,6 +68,7 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact
           shsStrand: formData.shsStrand,
         });
         if (error) throw error;
+        if (!data.session) setRegisteredEmail(formData.email.trim().toLowerCase());
       }
     } catch (err) {
       const message = err.message || '';
@@ -82,6 +87,76 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact
       setLoading(false);
     }
   };
+
+  const handleVerifyCode = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setVerificationError('');
+    setResendStatus('');
+    const { error: verifyError } = await verifySignupCode(registeredEmail, verificationCode);
+    if (verifyError) {
+      setVerificationError(verifyError.message || 'Invalid or expired verification code.');
+      setLoading(false);
+    }
+    // A successful OTP verification creates a session; AuthContext then routes
+    // the pending student to administrator review.
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setVerificationError('');
+    setResendStatus('');
+    const { error: resendError } = await resendVerificationEmail(registeredEmail);
+    setResendStatus(resendError
+      ? resendError.message || 'Unable to resend verification code.'
+      : 'A new verification code was sent. Check your inbox and spam folder.');
+    setLoading(false);
+  };
+
+  if (registeredEmail) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card email-verification-card">
+        <div className="email-verification-icon"><Mail size={30} /></div>
+        <div className="form-header">
+          <h3>Enter verification code</h3>
+          <p>We sent an eight-digit code to <strong>{registeredEmail}</strong>.</p>
+        </div>
+        <p className="email-verification-copy">
+          Enter the code below. After verification, your account will move to administrator review.
+        </p>
+        <form onSubmit={handleVerifyCode}>
+          <label className="verification-code-label" htmlFor="verification-code">Verification code</label>
+          <input
+            id="verification-code"
+            className="verification-code-input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{8}"
+            maxLength="8"
+            required
+            autoFocus
+            value={verificationCode}
+            onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+            placeholder="00000000"
+            aria-describedby={verificationError ? 'verification-code-error' : undefined}
+          />
+          {verificationError ? <p id="verification-code-error" className="error-message">{verificationError}</p> : null}
+          {resendStatus ? <p className="email-verification-status" role="status">{resendStatus}</p> : null}
+          <button type="submit" className="submit-btn full-width" disabled={loading || verificationCode.length !== 8}>
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+            Verify email
+          </button>
+        </form>
+        <button type="button" className="verification-resend-link" onClick={handleResendVerification} disabled={loading}>
+          Resend code
+        </button>
+        <button type="button" className="verification-back-link" onClick={() => { setRegisteredEmail(''); toggleForm(); }}>
+          Back to login
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

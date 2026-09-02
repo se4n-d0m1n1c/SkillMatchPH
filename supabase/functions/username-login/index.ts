@@ -48,6 +48,9 @@ Deno.serve(async (request) => {
 
     const { data: account, error: accountError } = await adminClient.auth.admin.getUserById(profile.id);
     if (accountError || !account.user?.email) return json({ error: 'Invalid username or password' }, 401);
+    if (!account.user.email_confirmed_at) {
+      return json({ error: 'Please verify your email before signing in.' }, 403);
+    }
 
     const authClient = createClient(supabaseUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },

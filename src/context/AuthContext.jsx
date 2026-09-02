@@ -113,6 +113,21 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
+  const verifySignupCode = async (email, token) => {
+    return supabase.auth.verifyOtp({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+      token: token.trim(),
+    });
+  };
+
+  const resendVerificationEmail = async (email) => {
+    return supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+    });
+  };
+
   const signIn = async (identifier, password) => {
     const normalizedIdentifier = identifier.trim();
 
@@ -155,6 +170,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = React.useMemo(() => ({
     signUp,
+    verifySignupCode,
+    resendVerificationEmail,
     signIn,
     signOut,
     refreshProfile,
