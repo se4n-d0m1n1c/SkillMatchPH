@@ -66,6 +66,41 @@
   display: flex;
 }
 
+/* Career assessment Likert scale */
+.likert-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.likert-option {
+  min-width: 0;
+  min-height: 132px;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.likert-option:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-teal) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.likert-swipe-hint {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .mobile-menu-btn {
     display: flex;
@@ -75,5 +110,63 @@
   
   .desktop-nav {
     display: none;
+  }
+
+  .assessment-question-card {
+    padding: 1.5rem !important;
+    overflow: hidden;
+  }
+
+  .likert-options {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.5rem -0.25rem 0;
+    padding: 0.25rem 0.25rem 0.8rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-teal) var(--field-bg);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .likert-options::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  .likert-options::-webkit-scrollbar-track {
+    background: var(--field-bg);
+    border-radius: 999px;
+  }
+
+  .likert-options::-webkit-scrollbar-thumb {
+    background: var(--accent-teal);
+    border-radius: 999px;
+  }
+
+  .likert-option {
+    flex: 0 0 min(42%, 148px);
+    min-height: 138px;
+    scroll-snap-align: start;
+    touch-action: manipulation;
+  }
+
+  .likert-swipe-hint {
+    display: block;
+    margin: 0.25rem 0 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .assessment-question-card {
+    padding: 1.15rem !important;
+  }
+
+  .likert-option {
+    flex-basis: min(46%, 136px);
   }
 }

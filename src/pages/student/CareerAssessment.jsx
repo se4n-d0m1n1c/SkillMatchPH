@@ -551,7 +551,7 @@ export default function CareerAssessment() {
             initial="hidden"
             animate="show"
             exit="exit"
-            className="glass-card"
+            className="glass-card assessment-question-card"
             style={{ padding: '2.5rem' }}
           >
             {/* Progress Header */}
@@ -605,46 +605,42 @@ export default function CareerAssessment() {
               </h2>
 
               {/* Interactive Bubbles */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(5, 1fr)', 
-                gap: '0.75rem', 
-                margin: '2rem 0',
-                textAlign: 'center'
-              }}>
+              <div
+                className="likert-options"
+                role="radiogroup"
+                aria-label="How much is this like you?"
+              >
                 {LIKERT_OPTIONS.map((opt) => {
                   const isSelected = interestAnswers[interestQuestions[qIndex]?.id] === opt.v;
                   return (
-                    <motion.div
+                    <motion.button
                       key={opt.v}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      className="likert-option"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => handleSelectInterest(opt.v)}
                       style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        cursor: 'pointer',
-                        padding: '1rem 0.5rem',
-                        borderRadius: '16px',
-                        background: isSelected ? 'rgba(0, 245, 255, 0.12)' : 'rgba(255, 255, 255, 0.02)',
-                        border: `1.5px solid ${isSelected ? 'var(--accent-teal)' : 'var(--glass-border)'}`,
-                        transition: 'all 0.2s ease'
+                        background: isSelected ? 'rgba(0, 245, 255, 0.12)' : 'var(--field-bg)',
+                        borderColor: isSelected ? 'var(--accent-teal)' : 'var(--glass-border)'
                       }}
                     >
                       <div style={{
                         width: '38px',
                         height: '38px',
                         borderRadius: '50%',
-                        border: `2px solid ${isSelected ? 'var(--accent-teal)' : 'rgba(255, 255, 255, 0.3)'}`,
-                        background: isSelected ? 'var(--accent-teal)' : 'transparent',
+                        border: `2px solid ${isSelected ? 'var(--accent-teal)' : 'var(--text-secondary)'}`,
+                        background: isSelected ? 'var(--accent-teal)' : 'var(--field-bg-hover)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: isSelected ? '#0a0f1e' : 'var(--text-primary)',
+                        fontFamily: 'inherit',
                         fontWeight: 700,
                         fontSize: '1rem',
+                        lineHeight: 1,
                         boxShadow: isSelected ? '0 0 16px rgba(0, 245, 255, 0.4)' : 'none',
                         transition: 'all 0.2s ease'
                       }}>
@@ -658,10 +654,11 @@ export default function CareerAssessment() {
                       }}>
                         {opt.label}
                       </span>
-                    </motion.div>
+                    </motion.button>
                   );
                 })}
               </div>
+              <p className="likert-swipe-hint">Swipe to see all choices</p>
 
               {errorMessage && (
                 <motion.div 
