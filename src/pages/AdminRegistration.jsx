@@ -8,12 +8,14 @@ import AuthBranding from '../components/auth/AuthBranding';
 import '../styles/Auth.css';
 
 const AdminRegistration = ({ embedded = false, onBack }) => {
-  const { user, role } = useAuth();
+  const { user, role, verifySignupCode, resendVerificationEmail } = useAuth();
   const [form, setForm] = useState({ firstName: '', lastName: '', username: '', email: '', password: '', inviteCode: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState('');
 
   if (user) return <Navigate to={role === 'admin' ? '/admin' : '/'} replace />;
 
@@ -51,6 +53,31 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
     if (!data.session) setSubmitted(true);
   };
 
+  const verifyCode = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    setVerificationStatus('');
+    const { error: verifyError } = await verifySignupCode(form.email, verificationCode);
+    if (verifyError) {
+      setError(verifyError.message || 'Invalid or expired verification code.');
+      setLoading(false);
+    }
+    // Successful verification creates a session. AuthContext resolves the
+    // invite-created profile and routes administrators to /admin.
+  };
+
+  const resendCode = async () => {
+    setLoading(true);
+    setError('');
+    setVerificationStatus('');
+    const { error: resendError } = await resendVerificationEmail(form.email);
+    setVerificationStatus(resendError
+      ? resendError.message || 'Unable to resend verification code.'
+      : 'A new verification code was sent. Check your inbox and spam folder.');
+    setLoading(false);
+  };
+
   const registrationCard = (
     <motion.div
       className="admin-register-card glass-card signup-wide"
@@ -69,13 +96,33 @@ const AdminRegistration = ({ embedded = false, onBack }) => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
             >
-              <h1>Check your email</h1>
-              <p>Your administrator account was created. Confirm your email, then sign in.</p>
-              {embedded ? (
-                <button type="button" onClick={onBack} className="submit-btn">Go to sign in <ArrowRight size={18} /></button>
-              ) : (
-                <Link to="/" className="submit-btn">Go to sign in <ArrowRight size={18} /></Link>
-              )}
+              <div className="email-verification-icon"><Mail size={30} /></div>
+              <h1>Enter verification code</h1>
+              <p>We sent an eight-digit code to <strong>{form.email.trim().toLowerCase()}</strong>.</p>
+              <form className="admin-verification-form" onSubmit={verifyCode}>
+                <label className="verification-code-label" htmlFor="admin-verification-code">Verification code</label>
+                <input
+                  id="admin-verification-code"
+                  className="verification-code-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{8}"
+                  maxLength="8"
+                  required
+                  autoFocus
+                  value={verificationCode}
+                  onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="00000000"
+                />
+                {error ? <p className="error-message" role="alert">{error}</p> : null}
+                {verificationStatus ? <p className="email-verification-status" role="status">{verificationStatus}</p> : null}
+                <button type="submit" className="submit-btn" disabled={loading || verificationCode.length !== 8}>
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+                  Verify administrator email
+                </button>
+              </form>
+              <button type="button" className="verification-resend-link" onClick={resendCode} disabled={loading}>Resend code</button>
             </motion.div>
           ) : (
             <motion.div

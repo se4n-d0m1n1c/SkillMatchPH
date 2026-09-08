@@ -47,7 +47,13 @@ const RejectedPage = () => {
             <Mail style={{ color: '#ff4d4d' }} size={24} />
             <div>
               <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Contact Administrator</h4>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Please reach out to your school admin for details.</p>
+              <p style={{ margin: '0 0 0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Please reach out to SkillMatchPH for account&nbsp;details.</p>
+              <a
+                href="mailto:skillmatchph76@gmail.com?subject=SkillMatchPH%20Rejected%20Account%20Inquiry"
+                style={{ color: '#ff4d4d', fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none', overflowWrap: 'anywhere' }}
+              >
+                skillmatchph76@gmail.com
+              </a>
             </div>
           </div>
         </div>

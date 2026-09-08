@@ -135,15 +135,20 @@ export const AuthProvider = ({ children }) => {
       body: { username: normalizedIdentifier, password },
     });
     if (error) {
-      let message = data?.error;
-      if (!message && error.context) {
+      let payload = data;
+      if (error.context) {
         try {
-          message = (await error.context.json()).error;
+          payload = await error.context.json();
         } catch {
           // The function may be unreachable or return a non-JSON platform error.
         }
       }
-      return { data: null, error: new Error(message || 'Invalid username or password') };
+      const authError = new Error(payload?.error || 'Invalid username or password');
+      if (payload?.verification_required && payload?.email) {
+        authError.code = 'email_verification_required';
+        authError.email = payload.email;
+      }
+      return { data: null, error: authError };
     }
 
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({

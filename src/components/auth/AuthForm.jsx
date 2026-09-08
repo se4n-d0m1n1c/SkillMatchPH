@@ -56,6 +56,12 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact
     try {
       if (isLogin) {
         const { error } = await signIn(formData.identifier, formData.password);
+        if (error?.code === 'email_verification_required' && error.email) {
+          setRegisteredEmail(error.email);
+          setVerificationCode('');
+          setResendStatus('Enter the code from your original email, or request a new one below.');
+          return;
+        }
         if (error) throw error;
       } else {
         const { data, error } = await signUp(formData.email, formData.password, {

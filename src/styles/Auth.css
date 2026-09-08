@@ -477,7 +477,19 @@
   color: var(--text-secondary);
 }
 
+.admin-register-success p strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.admin-verification-form {
+  width: min(430px, 100%);
+  margin: 0 auto;
+}
+
 .admin-register-success .submit-btn {
+  width: 100%;
+  justify-content: center;
   text-decoration: none;
 }
 
