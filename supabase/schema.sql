@@ -25,7 +25,7 @@ create table public.programs (
   id uuid primary key default gen_random_uuid(),
   title text not null unique,
   category text not null check (category in (
-    'Technology', 'Business', 'Engineering', 'Health',
+    'Technology', 'Business', 'Engineering', 'Health', 'Criminal Justice',
     'Arts & Humanities', 'Sciences', 'Education'
   )),
   description text not null,

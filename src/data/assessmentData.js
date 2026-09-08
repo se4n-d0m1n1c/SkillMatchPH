@@ -101,6 +101,16 @@ export const PROGRAM_ASSESSMENT_MAP = {
     domains: [{ d: 'verbal', min: 55 }],
     why: 'Artistic creative storytelling and media production, social engagement with audiences, and enterprising public strategy.'
   },
+  'Criminal Justice': {
+    code: 'ICR',
+    domains: [{ d: 'logical', min: 50 }, { d: 'verbal', min: 50 }],
+    why: 'Investigative analysis of evidence and criminal behavior, conventional application of laws and procedures, and realistic field-based public-safety work.'
+  },
+  'Criminology': {
+    code: 'ICR',
+    domains: [{ d: 'logical', min: 50 }, { d: 'verbal', min: 50 }],
+    why: 'Investigative study of crime and evidence, conventional legal documentation and procedure, and realistic preparation for field enforcement and public safety.'
+  },
   'Computer Science': {
     code: 'IRC',
     domains: [{ d: 'logical', min: 55 }, { d: 'numerical', min: 50 }],
@@ -174,6 +184,7 @@ export const CATEGORY_DEFAULT_MAP = {
   'Business': { code: 'ECS', domains: [], why: 'Enterprising leadership, conventional organizational processes, and social management.' },
   'Engineering': { code: 'RIE', domains: [{ d: 'numerical', min: 55 }, { d: 'logical', min: 50 }], why: 'Realistic hands-on systems, investigative design, and enterprising implementation.' },
   'Health': { code: 'SIA', domains: [{ d: 'verbal', min: 45 }], why: 'Social patient service, investigative clinical science, and artistic empathy.' },
+  'Criminal Justice': { code: 'ICR', domains: [{ d: 'logical', min: 50 }, { d: 'verbal', min: 50 }], why: 'Investigative evidence analysis, conventional legal procedure and documentation, and realistic field-based public-safety work.' },
   'Arts & Humanities': { code: 'ASE', domains: [{ d: 'verbal', min: 50 }], why: 'Artistic expression, social connection, and enterprising initiative.' },
   'Sciences': { code: 'IRE', domains: [{ d: 'logical', min: 50 }], why: 'Investigative scientific research, realistic laboratory work, and enterprising problem solving.' },
   'Education': { code: 'SAE', domains: [{ d: 'verbal', min: 50 }], why: 'Social instruction, artistic curriculum design, and enterprising classroom leadership.' }

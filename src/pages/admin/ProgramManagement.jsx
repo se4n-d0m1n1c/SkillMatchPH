@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase';
 import MenuSelect from '../../components/common/MenuSelect';
 
 // ─── Constants & Fetchers (rendering-hoist-jsx & rerender-memo-with-default-value)
-const CATEGORIES = ['Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
+const CATEGORIES = ['Technology', 'Business', 'Engineering', 'Health', 'Criminal Justice', 'Arts & Humanities', 'Sciences', 'Education'];
 const EMPTY_ARRAY = [];
 const INITIAL_PROG_FORM = {
   title: '',

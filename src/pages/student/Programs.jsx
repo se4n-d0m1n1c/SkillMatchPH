@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { calculateLocationProximity, getSavedPinnedLocation } from '../../data/locationsData';
 
 // 1. Hoist static data outside component to avoid recreation (rendering-hoist-jsx)
-const CATEGORIES = ['All', 'Technology', 'Business', 'Engineering', 'Health', 'Arts & Humanities', 'Sciences', 'Education'];
+const CATEGORIES = ['All', 'Technology', 'Business', 'Engineering', 'Health', 'Criminal Justice', 'Arts & Humanities', 'Sciences', 'Education'];
 
 // 2. Map string identifiers from the database to actual React components
 const ICON_MAP = {
