@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, readInitialUrlParams } from '../lib/supabase';
+import { classifyRecoveryLanding } from '../lib/recoveryLanding';
 
 const AuthContext = createContext({});
+
+const readRecoveryLanding = () => classifyRecoveryLanding(readInitialUrlParams());
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [status, setStatus] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recovery, setRecovery] = useState(readRecoveryLanding);
 
   const fetchProfile = async (userId) => {
     const { data, error } = await supabase
@@ -36,6 +40,11 @@ export const AuthProvider = ({ children }) => {
 
   const handleAuthStateChange = async (event, session) => {
     if (event === 'TOKEN_REFRESHED') return;
+
+    // Supabase emits this when a recovery link is exchanged for a session.
+    if (event === 'PASSWORD_RECOVERY') {
+      setRecovery({ recoveryRequired: true, recoveryLinkState: 'exchanged', recoveryError: '' });
+    }
 
     if (event === 'SIGNED_OUT') {
       setSession(null);
@@ -173,6 +182,15 @@ export const AuthProvider = ({ children }) => {
     return profileData;
   };
 
+  // Leaves the recovery flow deliberately, so the route guard stops pinning the
+  // visitor to /recover-account.
+  const endRecovery = async () => {
+    setRecovery({ recoveryRequired: false, recoveryLinkState: 'none', recoveryError: '' });
+    if (user) {
+      await supabase.auth.signOut();
+    }
+  };
+
   const value = React.useMemo(() => ({
     signUp,
     verifySignupCode,
@@ -180,13 +198,17 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     refreshProfile,
+    endRecovery,
     user,
     session,
     role,
     status,
     profile,
     loading,
-  }), [user, session, role, status, profile, loading]);
+    recoveryRequired: recovery.recoveryRequired,
+    recoveryLinkState: recovery.recoveryLinkState,
+    recoveryError: recovery.recoveryError,
+  }), [user, session, role, status, profile, loading, recovery]);
 
   return (
     <AuthContext.Provider value={value}>

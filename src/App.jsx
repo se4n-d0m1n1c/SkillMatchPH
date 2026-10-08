@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
+import RecoverAccount from './pages/RecoverAccount'
 import Dashboard from './pages/Dashboard'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -25,12 +26,26 @@ import ThemeToggle from './components/common/ThemeToggle'
 import './App.css'
 
 function App() {
-  const { user, role, status, loading } = useAuth();
+  const { user, role, status, loading, recoveryRequired } = useAuth();
+  const { pathname } = useLocation();
+
+  // An emailed recovery link signs the visitor in, so every normal route would
+  // otherwise resolve to the dashboard and the recovery form would never show.
+  if (recoveryRequired && pathname !== '/recover-account') {
+    return (
+      <div className="app">
+        <ThemeToggle />
+        <Navigate to="/recover-account" replace />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
       <ThemeToggle />
       <Routes>
+        {/* Recovery stays public even when another account is signed in. */}
+        <Route path="/recover-account" element={<RecoverAccount />} />
         {/* Public Route */}
         <Route path="/admin/register" element={<AdminRegistration />} />
 

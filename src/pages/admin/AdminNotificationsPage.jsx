@@ -12,6 +12,7 @@ const FILTERS = [
   { key: 'student_registration', label: 'Registrations', icon: <UserPlus size={16} /> },
   { key: 'student_profile_updated', label: 'Profile Updates', icon: <UserPen size={16} /> },
   { key: 'student_username_changed', label: 'Username Changes', icon: <AtSign size={16} /> },
+  { key: 'student_password_changed', label: 'Password Changes', icon: <UserPen size={16} /> },
   { key: 'admin_contact_requested', label: 'Contact Requests', icon: <MessageCircleQuestion size={16} /> },
 ];
 
@@ -61,6 +62,9 @@ const itemMeta = (item) => {
     icon = <UserPlus size={18} />;
     title = 'New student registration';
     detail = `${name} submitted an account for review.`;
+  } else if (item.type === 'student_password_changed') {
+    title = 'Student password changed';
+    detail = `${name}'s account password was changed.`;
   } else if (isUsernameChange) {
     icon = <AtSign size={18} />;
     title = 'Student username changed';

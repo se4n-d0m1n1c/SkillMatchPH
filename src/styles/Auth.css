@@ -517,6 +517,82 @@
   cursor: pointer;
 }
 
+/* Public email-link recovery reuses auth theme tokens. */
+.recovery-wrapper {
+  width: 100%;
+  max-width: 560px;
+  min-width: 0;
+}
+
+.recovery-card .form-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.recovery-card {
+  overflow-wrap: anywhere;
+}
+
+.recovery-card .form-header p,
+.recovery-note {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.recovery-field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.recovery-card .input-group input {
+  min-height: 48px;
+  min-width: 0;
+  background: var(--field-bg);
+  color: var(--text-primary);
+}
+
+.recovery-input input {
+  padding-left: 1rem;
+}
+
+.recovery-card button,
+.recovery-card .admin-register-back,
+.password-help-link {
+  min-height: 44px;
+}
+
+.recovery-card .recovery-choice label {
+  min-height: 48px;
+}
+
+.recovery-card :is(button, a, input):focus-visible,
+.recovery-card [tabindex="-1"]:focus,
+.password-help-link:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 4px;
+}
+
+.recovery-card .contact-success-message,
+.recovery-card .error-message {
+  margin-block: 1rem;
+  line-height: 1.6;
+}
+
+.recovery-card button:disabled {
+  cursor: wait;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recovery-card *,
+  .recovery-card *::before,
+  .recovery-card *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* Responsive Refinement */
 .email-verification-card {
   text-align: center;

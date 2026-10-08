@@ -290,13 +290,13 @@ const AuthForm = ({ isLogin, toggleForm, showAdminRegistration, showAdminContact
               {isLogin ? (
                 <div className="form-footer">
                   <span className="password-help">
-                    Need to change your password?{' '}
+                    Forgot your username or password? Recover by email.{' '}
                     <button
                       type="button"
                       className="password-help-link"
                       onClick={showAdminContact}
                     >
-                      Contact your school administrator
+                      Recover account
                     </button>
                   </span>
                 </div>

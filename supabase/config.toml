@@ -3,3 +3,7 @@ verify_jwt = false
 
 [functions.change-student-username]
 verify_jwt = true
+
+# Email token authenticates this endpoint, not an existing login session.
+[functions.complete-account-recovery]
+verify_jwt = false

@@ -174,11 +174,15 @@ const AdminNotifications = () => {
                     <span className="notification-copy">
                       <strong>{isContactRequest
                         ? 'Administrator contact requested'
+                        : item.type === 'student_password_changed'
+                          ? 'Student password changed'
                         : isUsernameChange
                           ? 'Student username changed'
                           : isRegistration ? 'New student registration' : 'Student profile updated'}</strong>
                       <span>{isContactRequest
                         ? `${name} requested ${contactReason}.`
+                        : item.type === 'student_password_changed'
+                          ? `${name}'s account password was changed.`
                         : isUsernameChange
                           ? `${name} changed their login username.`
                           : isRegistration
