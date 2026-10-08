@@ -425,8 +425,8 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
 const STATUS_EMAIL_TRIGGERS = ['approved', 'rejected'];
 const STATUS_EMAIL_NOTICES = {
   already_sent: '',
-  email_not_configured: 'Status saved, but no student email was sent: no mail provider key is configured yet.',
-  provider_error: 'Status saved, but the mail provider rejected the message. Check the RESEND_API_KEY and sender address.',
+  email_not_configured: 'Status saved, but no student email was sent: no mail settings are configured yet.',
+  provider_error: 'Status saved, but the mail server rejected the message. Check the SMTP or email provider settings.',
   request_failed: 'Status saved, but the notification service could not be reached.',
 };
 

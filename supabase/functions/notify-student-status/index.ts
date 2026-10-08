@@ -3,12 +3,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 /**
  * Emails a student when an administrator approves or rejects their account.
  *
- * Supabase can host this logic and transport the payload, but it cannot deliver
- * an arbitrary custom message: its built-in sender is limited to authentication
- * templates and is capped at a couple of messages per hour. The final delivery
- * hop therefore goes to an HTTP mail API. Configure RESEND_API_KEY to enable it;
- * without that secret the function reports email_not_configured and records
- * nothing, so the notification can be retried once the key is added.
+ * Supabase hosts this logic but its built-in sender only covers authentication
+ * templates and refuses to send arbitrary message bodies, so delivery goes
+ * through a transport chosen from whichever secrets are configured:
+ *
+ *  1. SMTP  - reuses the same mail account already configured for Supabase Auth
+ *             emails. Supabase blocks outbound ports 25 and 587, so the
+ *             connection must use implicit TLS on 465.
+ *  2. Resend - HTTP fallback when no SMTP secrets are present.
+ *
+ * With neither configured the function reports email_not_configured and records
+ * nothing, so the notification can be sent later without creating a duplicate.
  */
 
 const corsHeaders = {
@@ -79,6 +84,67 @@ const buildRejectedEmail = ({ firstName, siteUrl }) => ({
   `),
 });
 
+const readSmtpConfig = () => {
+  const hostname = Deno.env.get('SMTP_HOST');
+  const username = Deno.env.get('SMTP_USER');
+  const password = Deno.env.get('SMTP_PASS');
+  if (!hostname || !username || !password) return null;
+
+  return {
+    hostname,
+    // Implicit TLS. Supabase blocks outbound 25 and 587, so 465 is the only
+    // usable submission port.
+    port: Number(Deno.env.get('SMTP_PORT') || 465),
+    username,
+    password,
+  };
+};
+
+const sendViaSmtp = async (smtp: NonNullable<ReturnType<typeof readSmtpConfig>>, message: { from: string; to: string; subject: string; html: string }) => {
+  const { SMTPClient } = await import('https://deno.land/x/denomailer@1.6.0/mod.ts');
+  const client = new SMTPClient({
+    connection: {
+      hostname: smtp.hostname,
+      port: smtp.port,
+      tls: true,
+      auth: { username: smtp.username, password: smtp.password },
+    },
+  });
+
+  try {
+    await client.send({
+      from: message.from,
+      to: message.to,
+      subject: message.subject,
+      content: 'auto',
+      html: message.html,
+    });
+  } finally {
+    await client.close();
+  }
+};
+
+const sendViaResend = async (apiKey: string, message: { from: string; to: string; subject: string; html: string }) => {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: message.from,
+      to: [message.to],
+      subject: message.subject,
+      html: message.html,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Mail provider rejected the message (${response.status}): ${detail.slice(0, 200)}`);
+  }
+};
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -140,8 +206,9 @@ Deno.serve(async (request) => {
       return json({ sent: false, reason: 'already_sent', sentAt: alreadySent.sent_at });
     }
 
+    const smtp = readSmtpConfig();
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendKey) {
+    if (!smtp && !resendKey) {
       // Nothing recorded, so this can be sent later without a duplicate.
       return json({ sent: false, reason: 'email_not_configured' });
     }
@@ -150,30 +217,33 @@ Deno.serve(async (request) => {
     if (accountError || !account?.user?.email) return json({ error: 'Student email is unavailable' }, 404);
 
     const siteUrl = (Deno.env.get('SITE_URL') || 'https://skill-match-ph.vercel.app').replace(/\/$/, '');
-    const from = Deno.env.get('STATUS_EMAIL_FROM') || 'SkillMatchPH <onboarding@resend.dev>';
+    // Mail servers reject a sender they do not own, so the SMTP account address
+    // is the safe default when nothing explicit is configured.
+    const from = Deno.env.get('STATUS_EMAIL_FROM')
+      || (smtp ? `SkillMatchPH <${smtp.username}>` : 'SkillMatchPH <onboarding@resend.dev>');
 
     const message = status === 'approved'
       ? buildApprovedEmail({ firstName: student.first_name || 'there', username: student.username || '', siteUrl })
       : buildRejectedEmail({ firstName: student.first_name || 'there', siteUrl });
 
-    const sendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: [account.user.email],
-        subject: message.subject,
-        html: message.html,
-      }),
-    });
+    const payload = {
+      from,
+      to: account.user.email,
+      subject: message.subject,
+      html: message.html,
+    };
 
-    if (!sendResponse.ok) {
-      const detail = await sendResponse.text();
-      console.error('notify-student-status: provider rejected the message', sendResponse.status, detail.slice(0, 300));
-      return json({ sent: false, reason: 'provider_error', status: sendResponse.status }, 502);
+    const transport = smtp ? 'smtp' : 'resend';
+    try {
+      if (smtp) {
+        await sendViaSmtp(smtp, payload);
+      } else {
+        await sendViaResend(resendKey as string, payload);
+      }
+    } catch (sendError) {
+      const detail = sendError instanceof Error ? sendError.message : 'unknown error';
+      console.error(`notify-student-status: ${transport} delivery failed`, detail);
+      return json({ sent: false, reason: 'provider_error', transport, detail }, 502);
     }
 
     // Recorded only after a confirmed send, so failures stay retryable.
@@ -187,7 +257,7 @@ Deno.serve(async (request) => {
       console.error('notify-student-status: ledger insert failed', ledgerError.message);
     }
 
-    return json({ sent: true, status, recipient: account.user.email });
+    return json({ sent: true, status, transport, recipient: account.user.email });
   } catch (error) {
     console.error('notify-student-status:', error instanceof Error ? error.message : 'unknown error');
     return json({ error: 'Unable to send the status email' }, 500);
