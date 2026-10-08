@@ -511,6 +511,23 @@ export default function CareerAssessment() {
                 </p>
               </div>
 
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '16px',
+                padding: '1.5rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                    04
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Part 4: Profile Similarity Scoring</h3>
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                  Your full six-part interest profile and four-part aptitude profile are compared with each program's published profile. Final match is <strong>70% interest similarity plus 30% aptitude similarity</strong>, so no single letter decides your ranking.
+                </p>
+              </div>
+
             </div>
 
             {/* Action */}
@@ -1120,7 +1137,7 @@ export default function CareerAssessment() {
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.2rem 0 0' }}>
                   {resultsTab === 'programs' 
-                    ? `Showing ${displayedPrograms.length} college programs tailored to your profile and commute range.`
+                    ? `Showing ${displayedPrograms.length} college programs ranked by profile similarity: 70% interest fit plus 30% aptitude fit.`
                     : `Showing ${displayedUniversities.length} universities sorted by exact distance from your pin.`}
                 </p>
               </div>
@@ -1250,7 +1267,13 @@ export default function CareerAssessment() {
                           {prog.match}%
                         </span>
                         <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          Match Score
+                          Overall Match
+                        </span>
+                        <span
+                          style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}
+                          title="Final match is 70% interest similarity plus 30% aptitude similarity."
+                        >
+                          {prog.riasecMatch}% interest · {prog.aptitudeMatch}% aptitude
                         </span>
                       </div>
                     </div>
