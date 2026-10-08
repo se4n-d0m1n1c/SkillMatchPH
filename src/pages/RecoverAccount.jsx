@@ -6,8 +6,22 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import '../styles/Auth.css';
 
-const FAILURE = 'Unable to complete recovery. This link may have expired or already been used. Request a new link before trying again.';
+const FALLBACK_FAILURE = 'Unable to complete recovery. Please try again.';
 const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+const RECOVERY_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/complete-account-recovery`;
+
+// The functions gateway rejects a request that carries no Authorization header,
+// even for a function configured with verify_jwt = false. Sending the public
+// anon key satisfies the gateway; the one-use email token is what actually
+// authorises the change, so no user session is involved.
+const recoveryHeaders = () => {
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return {
+    'Content-Type': 'application/json',
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`
+  };
+};
 
 const RecoverAccount = () => {
   const { recoveryLinkState, recoveryError, endRecovery, user } = useAuth();
@@ -46,24 +60,43 @@ const RecoverAccount = () => {
 
   const submitViaToken = async () => {
     const submittedToken = tokenHash;
-    // A failed request may already have consumed the token, so never reuse it.
-    setTokenHash('');
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/complete-account-recovery`, {
-      method: 'POST',
-      credentials: 'omit',
-      headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
-      body: JSON.stringify({
-        token_hash: submittedToken,
-        action,
-        ...(action === 'password' ? { password } : { username: username.trim() })
-      }),
-    });
-    const result = await response.json();
-    if (!response.ok || result?.success !== true) throw new Error('Recovery failed');
-    setLinkState('done');
-    setSuccess(action === 'password'
-      ? 'Your password has been changed. Sign in with your new password.'
-      : 'Your username has been changed. Sign in with your new username.');
+    let response;
+    let result = null;
+
+    try {
+      response = await fetch(RECOVERY_ENDPOINT, {
+        method: 'POST',
+        credentials: 'omit',
+        headers: recoveryHeaders(),
+        body: JSON.stringify({
+          token_hash: submittedToken,
+          action,
+          ...(action === 'password' ? { password } : { username: username.trim() })
+        })
+      });
+      result = await response.json();
+    } catch {
+      throw new Error('Could not reach the recovery service. Check your connection and try this link again.');
+    }
+
+    if (response.ok && result?.success === true) {
+      setTokenHash('');
+      setLinkState('done');
+      setSuccess(action === 'password'
+        ? 'Your password has been changed. Sign in with your new password.'
+        : 'Your username has been changed. Sign in with your new username.');
+      return;
+    }
+
+    // The one-use token is spent only once the service has actually read it.
+    // A refusal such as a gateway authorization failure leaves the link usable.
+    const consumed = result?.tokenConsumed === true
+      || result?.code === 'invalid_recovery_link'
+      || result?.code === 'student_required';
+    if (consumed) setTokenHash('');
+
+    const reason = result?.error || result?.message || `The recovery service returned status ${response.status}.`;
+    throw new Error(consumed ? reason : `${reason} This link has not been used, so you can try again.`);
   };
 
   const submitViaSession = async () => {
@@ -78,10 +111,20 @@ const RecoverAccount = () => {
 
     // Changing a login name still requires the account password as a second
     // factor on this path.
-    const { error: invokeError } = await supabase.functions.invoke('change-student-username', {
+    const { data, error: invokeError } = await supabase.functions.invoke('change-student-username', {
       body: { username: username.trim().toLowerCase(), password: currentPassword }
     });
-    if (invokeError) throw invokeError;
+    if (invokeError) {
+      let reason = invokeError.message;
+      try {
+        const detail = await invokeError.context?.json();
+        if (detail?.error) reason = detail.error;
+      } catch {
+        // Platform-level failures have no JSON body to read.
+      }
+      throw new Error(reason || 'Unable to change your username.');
+    }
+    if (data?.error) throw new Error(data.error);
     setSuccess('Your username has been changed.');
   };
 
@@ -119,8 +162,8 @@ const RecoverAccount = () => {
       setPassword('');
       setConfirmation('');
       setCurrentPassword('');
-    } catch {
-      setError(FAILURE);
+    } catch (submitError) {
+      setError(submitError?.message || FALLBACK_FAILURE);
       inFlight.current = false;
       setSending(false);
       return;
