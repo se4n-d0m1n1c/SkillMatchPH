@@ -420,16 +420,6 @@ const SearchBar = memo(({ value, onChange, inputRef, isLoading }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-// Statuses that email the student, and how a delivery problem is explained.
-// An empty notice is intentional: a repeat approval should not nag the admin.
-const STATUS_EMAIL_TRIGGERS = ['approved', 'rejected'];
-const STATUS_EMAIL_NOTICES = {
-  already_sent: '',
-  email_not_configured: 'Status saved, but no student email was sent: no mail provider key is configured yet.',
-  provider_error: 'Status saved, but the mail provider rejected the message. Check the RESEND_API_KEY and sender address.',
-  request_failed: 'Status saved, but the notification service could not be reached.',
-};
-
 const StudentManagement = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -442,27 +432,6 @@ const StudentManagement = () => {
   const [passwordTarget, setPasswordTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [highlightedStudentId, setHighlightedStudentId] = useState(null);
-  const [emailNotice, setEmailNotice] = useState('');
-  const lastEmailAttempt = useRef(null);
-
-  // The status change is already saved when this runs, so a delivery problem is
-  // reported as a notice rather than rolled back or hidden behind an alert.
-  const sendStatusEmail = useCallback(async (studentId, status) => {
-    lastEmailAttempt.current = { studentId, status };
-    try {
-      const { data, error } = await supabase.functions.invoke('notify-student-status', {
-        body: { studentId, status },
-      });
-      if (error) throw error;
-      if (data?.sent === false) {
-        setEmailNotice(STATUS_EMAIL_NOTICES[data.reason] ?? `The ${status} email was not sent.`);
-        return;
-      }
-      setEmailNotice('');
-    } catch (err) {
-      setEmailNotice(`Status saved, but the ${status} email could not be sent: ${err.message}`);
-    }
-  }, []);
 
   const searchInputRef = useRef(null);
 
@@ -502,11 +471,10 @@ const StudentManagement = () => {
 
       if (error) throw error;
       mutate(prev => prev.map(s => (s.id === id ? { ...s, status: 'approved' } : s)), false);
-      await sendStatusEmail(id, 'approved');
     } catch (err) {
       alert('Error approving student: ' + err.message);
     }
-  }, [mutate, sendStatusEmail]);
+  }, [mutate]);
 
   const handleReject = useCallback(async (id) => {
     try {
@@ -517,22 +485,15 @@ const StudentManagement = () => {
 
       if (error) throw error;
       mutate(prev => prev.map(s => (s.id === id ? { ...s, status: 'rejected' } : s)), false);
-      await sendStatusEmail(id, 'rejected');
     } catch (err) {
       alert('Error rejecting student: ' + err.message);
     } [mutate];
-  }, [mutate, sendStatusEmail]);
+  }, [mutate]);
 
   const handleEditSave = useCallback((updated) => {
-    const previousStatus = editTarget?.status;
     mutate(prev => prev.map(s => (s.id === updated.id ? updated : s)), false);
     setEditTarget(null);
-
-    // The edit modal can also change status, so it needs to notify as well.
-    if (updated.status !== previousStatus && STATUS_EMAIL_TRIGGERS.includes(updated.status)) {
-      sendStatusEmail(updated.id, updated.status);
-    }
-  }, [mutate, editTarget, sendStatusEmail]);
+  }, [mutate]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
@@ -577,59 +538,6 @@ const StudentManagement = () => {
           <SearchBar value={searchTerm} onChange={setSearchTerm} inputRef={searchInputRef} />
         </div>
       </header>
-
-      {emailNotice ? (
-        <div
-          role="status"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '1rem',
-            margin: '0 0 1rem',
-            padding: '0.85rem 1rem',
-            borderRadius: '10px',
-            background: 'var(--warning-bg, rgba(251, 191, 36, 0.12))',
-            border: '1px solid var(--warning-border, rgba(251, 191, 36, 0.35))',
-            color: 'var(--text-primary)',
-            fontSize: '0.9rem',
-            lineHeight: 1.5,
-          }}
-        >
-          <span>{emailNotice}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={() => {
-                const attempt = lastEmailAttempt.current;
-                setEmailNotice('');
-                if (attempt) sendStatusEmail(attempt.studentId, attempt.status);
-              }}
-              style={{
-                border: '1px solid var(--glass-border)',
-                background: 'var(--field-bg)',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                padding: '0.35rem 0.75rem',
-                borderRadius: '8px',
-                minHeight: '36px',
-              }}
-            >
-              Retry
-            </button>
-            <button
-              type="button"
-              onClick={() => setEmailNotice('')}
-              aria-label="Dismiss notification"
-              style={{ border: 0, background: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}
-            >
-              ×
-            </button>
-          </span>
-        </div>
-      ) : null}
 
       <div className="data-table-container">
         <table className="data-table">
