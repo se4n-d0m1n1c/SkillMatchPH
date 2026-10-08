@@ -534,7 +534,7 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
 
     const riasecMatch = distanceToMatch(riasecDistance);
     const aptitudeMatch = distanceToMatch(aptitudeDistance);
-    const match = riasecMatch * RIASEC_WEIGHT + aptitudeMatch * APTITUDE_WEIGHT;
+    const matchScore = riasecMatch * RIASEC_WEIGHT + aptitudeMatch * APTITUDE_WEIGHT;
 
     // A growth advisory is raised when a program materially emphasizes an
     // aptitude domain where the student's normalized profile falls short.
@@ -559,12 +559,16 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
       code: p.code,
       profileKey: programWeights.key,
       why: p.why ? `${profileSentence} ${p.why}` : profileSentence,
-      match: Math.round(match),
+      // `match` is the whole-percent figure shown to students. `matchScore` keeps
+      // the full precision so programs that round to the same percent are still
+      // ordered by their true fit instead of by name.
+      match: Math.round(matchScore),
+      matchScore: Math.round(matchScore * 100) / 100,
       riasecMatch: Math.round(riasecMatch * 100) / 100,
       aptitudeMatch: Math.round(aptitudeMatch * 100) / 100,
       riasecWeights: programWeights.riasec,
       aptitudeWeights: programWeights.aptitude,
       flags
     };
-  }).sort((a, b) => b.match - a.match || a.name.localeCompare(b.name));
+  }).sort((a, b) => b.matchScore - a.matchScore || a.name.localeCompare(b.name));
 }

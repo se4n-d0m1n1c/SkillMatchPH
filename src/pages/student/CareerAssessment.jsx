@@ -11,7 +11,6 @@ import {
   Building, 
   Globe, 
   ExternalLink, 
-  X, 
   MapPin, 
   AlertTriangle,
   RotateCcw,
@@ -182,28 +181,34 @@ export default function CareerAssessment() {
         return { ...u, proximity: prox };
       }).filter(u => u.proximity.isNearby);
 
-      // Closest university distance
-      const minDistance = nearbyUnis.length > 0
-        ? Math.min(...nearbyUnis.map(u => u.proximity.distanceKm || 999))
+      // Closest campus. `distanceKm || 999` was wrong here: a campus at the
+      // pinned location resolves to exactly 0 km, which is falsy, so the closest
+      // offering was reported as 999 km away.
+      const knownDistances = nearbyUnis
+        .map(u => u.proximity.distanceKm)
+        .filter(distance => typeof distance === 'number' && Number.isFinite(distance));
+      const minDistance = knownDistances.length > 0
+        ? Math.min(...knownDistances)
         : null;
 
       const hasNearbyOffering = nearbyUnis.length > 0;
-      const locationBoost = hasNearbyOffering ? 5 : 0;
-      const adjustedMatch = Math.min(100, prog.match + locationBoost);
 
+      // Proximity is surfaced through the "Near You" badge, the closest-campus
+      // distance, and the nearby-only filter. It deliberately no longer adds a
+      // hidden +5 to the ranking: that made the list order disagree with the
+      // percentage printed on each card.
       return {
         ...prog,
         nearbyUnis,
         hasNearbyOffering,
-        minDistance,
-        adjustedMatch
+        minDistance
       };
     });
   }, [scoreResults, catalogPrograms, pinnedLocation]);
 
   const topRankedPrograms = useMemo(() => (
     [...rankedPrograms]
-      .sort((a, b) => b.adjustedMatch - a.adjustedMatch)
+      .sort((a, b) => b.matchScore - a.matchScore || a.name.localeCompare(b.name))
       .slice(0, 3)
   ), [rankedPrograms]);
 
