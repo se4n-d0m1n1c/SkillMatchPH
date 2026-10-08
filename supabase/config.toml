@@ -7,3 +7,8 @@ verify_jwt = true
 # Email token authenticates this endpoint, not an existing login session.
 [functions.complete-account-recovery]
 verify_jwt = false
+
+# Called by a signed-in administrator, so the gateway must verify the JWT and the
+# function then re-checks the administrator role.
+[functions.notify-student-status]
+verify_jwt = true
