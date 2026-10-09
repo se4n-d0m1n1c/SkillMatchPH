@@ -360,6 +360,20 @@ function sumAbsoluteDifference(studentVector, programVector, order) {
   );
 }
 
+// Program badges must describe the profile actually used for scoring. Deriving
+// the code from the resolved vector prevents a category fallback (for example,
+// Arts & Humanities = ASE) from being displayed on a published Agriculture
+// profile whose strongest dimensions are R, I, and C.
+export function deriveHollandCode(riasecWeights) {
+  return [...RIASEC_ORDER]
+    .sort((a, b) => {
+      const scoreDifference = (Number(riasecWeights?.[b]) || 0) - (Number(riasecWeights?.[a]) || 0);
+      return scoreDifference || a.localeCompare(b);
+    })
+    .slice(0, 3)
+    .join('');
+}
+
 // Converts an absolute-difference total into a 0-100 match percentage.
 function distanceToMatch(distance) {
   const bounded = Math.min(Math.max(distance, 0), MAX_VECTOR_DISTANCE);
@@ -591,7 +605,9 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
       description: p.description,
       icon_name: p.icon_name,
       universities: p.universities,
-      code: p.code,
+      // Program code, not the student's code. It is derived from the exact
+      // database/published/fallback vector used for this program's score.
+      code: deriveHollandCode(programWeights.riasec),
       profileKey: programWeights.key,
       weightSource: programWeights.source,
       why: p.why ? `${profileSentence} ${p.why}` : profileSentence,
