@@ -12,6 +12,15 @@ import {
 import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
 import MenuSelect from '../../components/common/MenuSelect';
+import {
+  getProgramWeights,
+  PROGRAM_ASSESSMENT_MAP,
+  CATEGORY_DEFAULT_MAP,
+  RIASEC_ORDER,
+  APTITUDE_ORDER,
+  RIASEC_TRAITS,
+  DOMAIN_METADATA
+} from '../../data/assessmentData';
 
 // ─── Constants & Fetchers (rendering-hoist-jsx & rerender-memo-with-default-value)
 const CATEGORIES = ['Technology', 'Business', 'Engineering', 'Health', 'Criminal Justice', 'Arts & Humanities', 'Sciences', 'Education'];
@@ -22,6 +31,26 @@ const INITIAL_PROG_FORM = {
   description: '',
   icon_name: 'BookOpen'
 };
+
+const WEIGHT_SOURCE_LABELS = {
+  published: 'the RIASEC College Program Weighting Guide',
+  fallback: 'a Holland-code fallback (no guide row matched)',
+  database: 'this program\'s stored weights',
+};
+
+// What the guide (or fallback) would score this program with, ignoring anything
+// already stored on the row.
+const resolveGuideProfile = (title, category) => {
+  const code = PROGRAM_ASSESSMENT_MAP[title]?.code || CATEGORY_DEFAULT_MAP[category]?.code || 'IRC';
+  return getProgramWeights(title, category, code);
+};
+
+const roundVector = (vector, order) => order.reduce((acc, key) => {
+  acc[key] = Math.round((Number(vector[key]) || 0) * 100) / 100;
+  return acc;
+}, {});
+
+const vectorTotal = (vector, order) => order.reduce((sum, key) => sum + (Number(vector?.[key]) || 0), 0);
 
 const ICON_MAP = {
   Code: <Code size={24} />,
@@ -112,18 +141,88 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
   const [formData, setFormData] = useState(() => program || INITIAL_PROG_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [customWeights, setCustomWeights] = useState(() => Boolean(program?.riasec_weights && program?.aptitude_weights));
+  const [weights, setWeights] = useState(() => {
+    if (program?.riasec_weights && program?.aptitude_weights) {
+      return { riasec: { ...program.riasec_weights }, aptitude: { ...program.aptitude_weights } };
+    }
+    const resolved = resolveGuideProfile(program?.title, program?.category);
+    return { riasec: { ...resolved.riasec }, aptitude: { ...resolved.aptitude } };
+  });
+
+  const guideProfile = useMemo(
+    () => resolveGuideProfile(formData.title, formData.category),
+    [formData.title, formData.category]
+  );
+
+  const riasecTotal = vectorTotal(weights.riasec, RIASEC_ORDER);
+  const aptitudeTotal = vectorTotal(weights.aptitude, APTITUDE_ORDER);
+  const totalsBalanced = Math.abs(riasecTotal - 100) <= 0.5 && Math.abs(aptitudeTotal - 100) <= 0.5;
+
+  const loadGuideProfile = () => {
+    setWeights({ riasec: { ...guideProfile.riasec }, aptitude: { ...guideProfile.aptitude } });
+    setError(null);
+  };
+
+  const setWeightValue = (group, key, raw) => {
+    const value = raw === '' ? 0 : Math.min(100, Math.max(0, Number(raw)));
+    setWeights(prev => ({ ...prev, [group]: { ...prev[group], [key]: Number.isFinite(value) ? value : 0 } }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     setError(null);
     try {
-      await onSave(formData);
+      if (customWeights && !totalsBalanced) {
+        throw new Error(`Weights must total 100. Interest is ${riasecTotal.toFixed(2)} and aptitude is ${aptitudeTotal.toFixed(2)}.`);
+      }
+      await onSave({
+        ...formData,
+        riasec_weights: customWeights ? roundVector(weights.riasec, RIASEC_ORDER) : null,
+        aptitude_weights: customWeights ? roundVector(weights.aptitude, APTITUDE_ORDER) : null,
+      });
       onClose();
     } catch (err) {
       setError(err.message);
       setIsSaving(false);
     }
+  };
+
+  const weightGrid = (group, order, labels) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '0.75rem' }}>
+      {order.map((key) => (
+        <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <label htmlFor={`weight-${group}-${key}`} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            {labels[key]}
+          </label>
+          <input
+            id={`weight-${group}-${key}`}
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            inputMode="decimal"
+            disabled={!customWeights}
+            value={weights[group][key] ?? 0}
+            onChange={(event) => setWeightValue(group, key, event.target.value)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
+  const totalBadge = (label, total) => {
+    const balanced = Math.abs(total - 100) <= 0.5;
+    return (
+      <span style={{
+        fontSize: '0.78rem',
+        fontWeight: 600,
+        color: !customWeights || balanced ? 'var(--text-secondary)' : '#ff4d4d',
+      }}>
+        {label} total: {total.toFixed(2)}{customWeights && !balanced ? ' — must be 100' : ''}
+      </span>
+    );
   };
 
   return (
@@ -202,6 +301,52 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
               placeholder="Provide a brief overview of the program..."
             />
           </div>
+
+          <fieldset style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <legend style={{ padding: '0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>Scoring weights</legend>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={customWeights}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setCustomWeights(next);
+                  if (!next) loadGuideProfile();
+                }}
+              />
+              Store weights on this program
+            </label>
+
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {customWeights
+                ? 'These values are saved on the program row and used instead of the guide.'
+                : `Currently scoring with ${WEIGHT_SOURCE_LABELS[guideProfile.source]}${guideProfile.key ? ` (${guideProfile.key})` : ''}.`}
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+              <button type="button" className="cancel-btn" onClick={loadGuideProfile}>Load guide profile</button>
+              {totalBadge('Interest', riasecTotal)}
+              {totalBadge('Aptitude', aptitudeTotal)}
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 600 }}>Interests (R I A S E C)</p>
+              {weightGrid('riasec', RIASEC_ORDER, RIASEC_ORDER.reduce((acc, k) => { acc[k] = `${k} · ${RIASEC_TRAITS[k].name}`; return acc; }, {}))}
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 600 }}>Aptitude (Verbal Spatial Numerical Logical)</p>
+              {weightGrid('aptitude', APTITUDE_ORDER, APTITUDE_ORDER.reduce((acc, d) => { acc[d] = DOMAIN_METADATA[d].label.replace(' Reasoning', ''); return acc; }, {}))}
+            </div>
+
+            {!customWeights && guideProfile.source === 'fallback' && (
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#fbbf24', lineHeight: 1.5 }}>
+                No guide row matched this title or category, so a generic Holland-code profile is being used.
+                Enabling stored weights and setting real values will score this program properly.
+              </p>
+            )}
+          </fieldset>
 
           {error ? (
             <div role="alert" style={{ color: '#ff4d4d', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 77, 77, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>

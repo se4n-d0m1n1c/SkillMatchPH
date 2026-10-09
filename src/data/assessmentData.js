@@ -195,7 +195,7 @@ const NORMALIZED_APTITUDE_WEIGHTS = (() => {
 })();
 
 // Maps catalog program titles onto the weighting-guide program names.
-const PROGRAM_ALIASES = {
+export const PROGRAM_ALIASES = {
   'accountancy': 'BS Accountancy',
   'architecture': 'BS Architecture',
   'biology': 'BS Biology',
@@ -294,15 +294,47 @@ function weightsFromHollandCode(code) {
   }, {});
 }
 
-export function getProgramWeights(title, category, fallbackCode) {
+// Reads a stored weight vector, keeping only the known keys and normalising to
+// 100 so a hand-edited row can never distort a comparison.
+function coerceStoredVector(vector, order) {
+  if (!vector || typeof vector !== 'object') return null;
+  const hasEveryKey = order.every((key) => Number.isFinite(Number(vector[key])));
+  if (!hasEveryKey) return null;
+  const total = order.reduce((sum, key) => sum + Number(vector[key]), 0);
+  if (total <= 0) return null;
+  return order.reduce((acc, key) => {
+    acc[key] = (Number(vector[key]) / total) * 100;
+    return acc;
+  }, {});
+}
+
+/**
+ * Resolves the weights used to score a program.
+ *
+ * Resolution order:
+ *  1. `database`  - vectors stored on the program row, editable in Admin
+ *  2. `published` - a row from the RIASEC College Program Weighting Guide
+ *  3. `fallback`  - a Holland code split 40/35/25, used when nothing matches
+ *
+ * The returned `source` lets the admin UI show which tier applied instead of
+ * leaving an unmatched program indistinguishable from a published one.
+ */
+export function getProgramWeights(title, category, fallbackCode, stored) {
+  const storedRiasec = coerceStoredVector(stored?.riasec_weights ?? stored?.riasec, RIASEC_ORDER);
+  const storedAptitude = coerceStoredVector(stored?.aptitude_weights ?? stored?.aptitude, APTITUDE_ORDER);
+  if (storedRiasec && storedAptitude) {
+    return { key: null, riasec: storedRiasec, aptitude: storedAptitude, source: 'database' };
+  }
+
   const key = resolveProgramProfileKey(title, category);
   if (key && NORMALIZED_RIASEC_WEIGHTS[key]) {
     const riasec = NORMALIZED_RIASEC_WEIGHTS[key];
     const aptitude = NORMALIZED_APTITUDE_WEIGHTS[key] || deriveAptitudeWeights(riasec);
-    return { key, riasec, aptitude };
+    return { key, riasec, aptitude, source: 'published' };
   }
+
   const riasec = weightsFromHollandCode(fallbackCode);
-  return { key: null, riasec, aptitude: deriveAptitudeWeights(riasec) };
+  return { key: null, riasec, aptitude: deriveAptitudeWeights(riasec), source: 'fallback' };
 }
 
 // Normalizes any percentage vector so its parts total 100.
@@ -512,7 +544,10 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
           icon_name: p.icon_name,
           universities: p.universities || [],
           code: assessmentInfo.code,
-          why: assessmentInfo.why || p.description
+          why: assessmentInfo.why || p.description,
+          // Present only when the row defines its own vectors in the database.
+          riasec_weights: p.riasec_weights,
+          aptitude_weights: p.aptitude_weights
         };
       })
     : Object.entries(PROGRAM_ASSESSMENT_MAP).map(([name, info]) => ({
@@ -527,7 +562,7 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
       }));
 
   return programList.map(p => {
-    const programWeights = getProgramWeights(p.name, p.category, p.code);
+    const programWeights = getProgramWeights(p.name, p.category, p.code, p);
 
     const riasecDistance = sumAbsoluteDifference(studentRiasec, programWeights.riasec, RIASEC_ORDER);
     const aptitudeDistance = sumAbsoluteDifference(studentAptitude, programWeights.aptitude, APTITUDE_ORDER);
@@ -558,6 +593,7 @@ export function matchPrograms(interest, aptitude, catalogPrograms = []) {
       universities: p.universities,
       code: p.code,
       profileKey: programWeights.key,
+      weightSource: programWeights.source,
       why: p.why ? `${profileSentence} ${p.why}` : profileSentence,
       // `match` is the whole-percent figure shown to students. `matchScore` keeps
       // the full precision so programs that round to the same percent are still
