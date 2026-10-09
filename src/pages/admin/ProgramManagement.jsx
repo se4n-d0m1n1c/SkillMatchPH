@@ -144,10 +144,16 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
   const [customWeights, setCustomWeights] = useState(() => Boolean(program?.riasec_weights && program?.aptitude_weights));
   const [weights, setWeights] = useState(() => {
     if (program?.riasec_weights && program?.aptitude_weights) {
-      return { riasec: { ...program.riasec_weights }, aptitude: { ...program.aptitude_weights } };
+      return {
+        riasec: roundVector(program.riasec_weights, RIASEC_ORDER),
+        aptitude: roundVector(program.aptitude_weights, APTITUDE_ORDER)
+      };
     }
     const resolved = resolveGuideProfile(program?.title, program?.category);
-    return { riasec: { ...resolved.riasec }, aptitude: { ...resolved.aptitude } };
+    return {
+      riasec: roundVector(resolved.riasec, RIASEC_ORDER),
+      aptitude: roundVector(resolved.aptitude, APTITUDE_ORDER)
+    };
   });
 
   const guideProfile = useMemo(
@@ -160,7 +166,10 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
   const totalsBalanced = Math.abs(riasecTotal - 100) <= 0.5 && Math.abs(aptitudeTotal - 100) <= 0.5;
 
   const loadGuideProfile = () => {
-    setWeights({ riasec: { ...guideProfile.riasec }, aptitude: { ...guideProfile.aptitude } });
+    setWeights({
+      riasec: roundVector(guideProfile.riasec, RIASEC_ORDER),
+      aptitude: roundVector(guideProfile.aptitude, APTITUDE_ORDER)
+    });
     setError(null);
   };
 
@@ -190,23 +199,27 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
   };
 
   const weightGrid = (group, order, labels) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '0.75rem' }}>
+    <div className={`program-weight-grid program-weight-grid--${group}`}>
       {order.map((key) => (
-        <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-          <label htmlFor={`weight-${group}-${key}`} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            {labels[key]}
+        <div key={key} className="program-weight-field">
+          <label htmlFor={`weight-${group}-${key}`}>
+            <span className="program-weight-code">{group === 'riasec' ? key : labels[key]}</span>
+            {group === 'riasec' && <span className="program-weight-name">{labels[key]}</span>}
           </label>
-          <input
-            id={`weight-${group}-${key}`}
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            inputMode="decimal"
-            disabled={!customWeights}
-            value={weights[group][key] ?? 0}
-            onChange={(event) => setWeightValue(group, key, event.target.value)}
-          />
+          <div className="program-weight-input-wrap">
+            <input
+              id={`weight-${group}-${key}`}
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              inputMode="decimal"
+              disabled={!customWeights}
+              value={weights[group][key] ?? 0}
+              onChange={(event) => setWeightValue(group, key, event.target.value)}
+            />
+            <span aria-hidden="true">%</span>
+          </div>
         </div>
       ))}
     </div>
@@ -214,13 +227,12 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
 
   const totalBadge = (label, total) => {
     const balanced = Math.abs(total - 100) <= 0.5;
+    const valid = !customWeights || balanced;
     return (
-      <span style={{
-        fontSize: '0.78rem',
-        fontWeight: 600,
-        color: !customWeights || balanced ? 'var(--text-secondary)' : '#ff4d4d',
-      }}>
-        {label} total: {total.toFixed(2)}{customWeights && !balanced ? ' — must be 100' : ''}
+      <span className={`program-weight-total ${valid ? 'is-valid' : 'is-invalid'}`}>
+        {label}
+        <strong>{total.toFixed(2)}%</strong>
+        <span>{valid ? 'Balanced' : 'Must equal 100%'}</span>
       </span>
     );
   };
@@ -240,7 +252,7 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
-        className="glass-card modal-content"
+        className="glass-card modal-content program-modal"
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -302,49 +314,76 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
             />
           </div>
 
-          <fieldset style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <legend style={{ padding: '0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>Scoring weights</legend>
+          <fieldset className="program-weight-panel">
+            <legend>Scoring weights</legend>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={customWeights}
-                onChange={(e) => {
-                  const next = e.target.checked;
-                  setCustomWeights(next);
-                  if (!next) loadGuideProfile();
-                }}
-              />
-              Store weights on this program
-            </label>
+            <div className="program-weight-header">
+              <div>
+                <h3>Program profile</h3>
+                <p>
+                  {customWeights
+                    ? 'Custom values are stored on this program and override the guide.'
+                    : `Using ${WEIGHT_SOURCE_LABELS[guideProfile.source]}${guideProfile.key ? ` (${guideProfile.key})` : ''}.`}
+                </p>
+              </div>
 
-            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              {customWeights
-                ? 'These values are saved on the program row and used instead of the guide.'
-                : `Currently scoring with ${WEIGHT_SOURCE_LABELS[guideProfile.source]}${guideProfile.key ? ` (${guideProfile.key})` : ''}.`}
-            </p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <button type="button" className="cancel-btn" onClick={loadGuideProfile}>Load guide profile</button>
-              {totalBadge('Interest', riasecTotal)}
-              {totalBadge('Aptitude', aptitudeTotal)}
+              <label className="program-weight-toggle">
+                <input
+                  type="checkbox"
+                  checked={customWeights}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setCustomWeights(next);
+                    if (!next) loadGuideProfile();
+                  }}
+                />
+                <span className="program-weight-toggle-track" aria-hidden="true">
+                  <span />
+                </span>
+                <span>Custom weights</span>
+              </label>
             </div>
 
-            <div>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 600 }}>Interests (R I A S E C)</p>
-              {weightGrid('riasec', RIASEC_ORDER, RIASEC_ORDER.reduce((acc, k) => { acc[k] = `${k} · ${RIASEC_TRAITS[k].name}`; return acc; }, {}))}
+            <div className="program-weight-toolbar">
+              <button type="button" className="program-weight-load-btn" onClick={loadGuideProfile}>
+                Load guide profile
+              </button>
+              <div className="program-weight-totals">
+                {totalBadge('Interest', riasecTotal)}
+                {totalBadge('Aptitude', aptitudeTotal)}
+              </div>
             </div>
 
-            <div>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 600 }}>Aptitude (Verbal Spatial Numerical Logical)</p>
+            <section className="program-weight-section" aria-labelledby="riasec-weight-title">
+              <div className="program-weight-section-heading">
+                <div>
+                  <span>Interest profile</span>
+                  <h4 id="riasec-weight-title">RIASEC</h4>
+                </div>
+                <p>Six dimensions must total 100%</p>
+              </div>
+              {weightGrid('riasec', RIASEC_ORDER, RIASEC_ORDER.reduce((acc, k) => { acc[k] = RIASEC_TRAITS[k].name; return acc; }, {}))}
+            </section>
+
+            <section className="program-weight-section" aria-labelledby="aptitude-weight-title">
+              <div className="program-weight-section-heading">
+                <div>
+                  <span>Skill profile</span>
+                  <h4 id="aptitude-weight-title">Aptitude</h4>
+                </div>
+                <p>Four domains must total 100%</p>
+              </div>
               {weightGrid('aptitude', APTITUDE_ORDER, APTITUDE_ORDER.reduce((acc, d) => { acc[d] = DOMAIN_METADATA[d].label.replace(' Reasoning', ''); return acc; }, {}))}
-            </div>
+            </section>
 
             {!customWeights && guideProfile.source === 'fallback' && (
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#fbbf24', lineHeight: 1.5 }}>
-                No guide row matched this title or category, so a generic Holland-code profile is being used.
-                Enabling stored weights and setting real values will score this program properly.
-              </p>
+              <div className="program-weight-warning" role="status">
+                <AlertCircle size={18} aria-hidden="true" />
+                <p>
+                  <strong>No guide profile found.</strong>
+                  This program is using a generic Holland-code profile. Turn on custom weights to set a specific profile.
+                </p>
+              </div>
             )}
           </fieldset>
 
@@ -369,7 +408,7 @@ const ProgramModal = memo(forwardRef(({ program, onClose, onSave }, ref) => {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const ProgramManagement = () => {
-  const { data: programs, error, isLoading, mutate } = useSWR('admin-programs', fetchPrograms);
+  const { data: programs, isLoading, mutate } = useSWR('admin-programs', fetchPrograms);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
