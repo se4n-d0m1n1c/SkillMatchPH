@@ -4,8 +4,13 @@
 -- existing program whose title matches a row (or alias) from the SkillMatch PH
 -- RIASEC College Program Weighting Guide.
 --
--- Generated from src/data/assessmentData.js so the 51 published rows cannot be
--- mis-transcribed. 55 title/alias combinations.
+-- Generated from src/data/assessmentData.js through the same resolver the app
+-- uses, so the stored vectors are exactly what the client already scores with.
+-- 55 title/alias combinations, every vector verified to total 100.
+--
+-- This matters for BS Physical Therapy: the guide prints that row as
+-- 15/25/5/40/10/10, which totals 105. The client normalises it to 100 on load,
+-- so the normalised values are what get stored.
 --
 -- Safe to re-run: seeding only fills rows that are still empty, so weights
 -- edited in the admin UI are never overwritten.
@@ -19,13 +24,13 @@ alter table public.programs
   add column if not exists aptitude_weights jsonb;
 
 comment on column public.programs.riasec_weights is
-  'Percent weights for R, I, A, S, E, C. Null means fall back to the published weighting guide.';
+  'Percent weights for R, I, A, S, E, C. Null falls back to the published weighting guide.';
 comment on column public.programs.aptitude_weights is
-  'Percent weights for verbal, spatial, numerical, logical. Null means fall back to the published weighting guide.';
+  'Percent weights for verbal, spatial, numerical, logical. Null falls back to the published weighting guide.';
 
--- Validation: either null, or an object carrying every key with numbers that
--- total 100. This stops the admin editor (or a hand-written UPDATE) from saving
--- a vector that would silently distort every comparison.
+-- Validation: either null, or an object carrying every key with numbers in
+-- 0..100 that total 100. Stops the admin editor or a hand-written UPDATE from
+-- storing a vector that would silently distort every comparison.
 create or replace function public.is_valid_weight_vector(vector jsonb, required_keys text[])
 returns boolean
 language sql
@@ -116,7 +121,7 @@ with profiles (title_key, riasec_weights, aptitude_weights) as (
   ('nursing', '{"R":5,"I":20,"A":5,"S":50,"E":10,"C":10}'::jsonb, '{"verbal":43.98,"spatial":8.3,"numerical":25.73,"logical":21.99}'::jsonb),
   ('medical technology', '{"R":15,"I":45,"A":5,"S":20,"E":5,"C":10}'::jsonb, '{"verbal":14.16,"spatial":12.65,"numerical":35.24,"logical":37.95}'::jsonb),
   ('pharmacy', '{"R":10,"I":45,"A":5,"S":20,"E":5,"C":15}'::jsonb, '{"verbal":14.64,"spatial":9.66,"numerical":39.25,"logical":36.45}'::jsonb),
-  ('physical therapy', '{"R":15,"I":25,"A":5,"S":40,"E":10,"C":10}'::jsonb, '{"verbal":30.88,"spatial":14.74,"numerical":25.61,"logical":28.77}'::jsonb),
+  ('physical therapy', '{"R":14.29,"I":23.81,"A":4.76,"S":38.1,"E":9.52,"C":9.52}'::jsonb, '{"verbal":30.88,"spatial":14.74,"numerical":25.61,"logical":28.77}'::jsonb),
   ('occupational therapy', '{"R":10,"I":20,"A":10,"S":45,"E":10,"C":5}'::jsonb, '{"verbal":39.92,"spatial":15.5,"numerical":20.54,"logical":24.03}'::jsonb),
   ('business administration', '{"R":10,"I":10,"A":5,"S":15,"E":40,"C":20}'::jsonb, '{"verbal":36.14,"spatial":15.35,"numerical":28.71,"logical":19.8}'::jsonb),
   ('marketing management', '{"R":5,"I":10,"A":20,"S":15,"E":45,"C":5}'::jsonb, '{"verbal":46.83,"spatial":22.93,"numerical":15.12,"logical":15.12}'::jsonb),
