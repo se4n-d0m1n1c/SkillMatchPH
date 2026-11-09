@@ -1,21 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined, MessagesSquare, UserCog, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BookOpen, UserPlus, LogOut, Menu, X, ClipboardList, ChartNoAxesCombined, UserCog, Bell } from 'lucide-react';
 import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import AdminNotifications from './AdminNotifications';
 import '../../styles/Admin.css';
-
-const fetchOpenRequestCount = async () => {
-  const { count, error } = await supabase
-    .from('admin_contact_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'open');
-
-  if (error) return 0;
-  return count ?? 0;
-};
 
 const fetchUnreadNotificationCount = async ([, userId, readRevision]) => {
   const lastReadAt = localStorage.getItem(`skillmatch-admin-notifications-read:${userId}`);
@@ -35,11 +25,6 @@ const AdminLayout = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationReadRevision, setNotificationReadRevision] = useState(0);
-  const { data: openRequestCount = 0, mutate: refreshRequestCount } = useSWR(
-    'admin-open-contact-request-count',
-    fetchOpenRequestCount,
-    { refreshInterval: 30_000 },
-  );
   const { data: unreadNotificationCount = 0, mutate: refreshNotificationCount } = useSWR(
     user ? ['admin-unread-notification-count', user.id, notificationReadRevision] : null,
     fetchUnreadNotificationCount,
@@ -54,7 +39,6 @@ const AdminLayout = ({ children }) => {
   useEffect(() => {
     const channel = supabase
       .channel('admin-sidebar-activity-counts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_contact_requests' }, () => refreshRequestCount())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => refreshNotificationCount())
       .subscribe();
 
@@ -67,7 +51,7 @@ const AdminLayout = ({ children }) => {
       window.removeEventListener('admin-notifications-read', refreshReadState);
       window.removeEventListener('storage', refreshReadState);
     };
-  }, [refreshRequestCount, refreshNotificationCount]);
+  }, [refreshNotificationCount]);
 
   // Prevent scroll when sidebar is open on mobile
   useEffect(() => {
@@ -87,7 +71,6 @@ const AdminLayout = ({ children }) => {
     { icon: <ClipboardList size={20} />, label: 'Assessments', path: '/admin/assessments' },
     { icon: <ChartNoAxesCombined size={20} />, label: 'Reports', path: '/admin/reports' },
     { icon: <Bell size={20} />, label: 'Notifications', path: '/admin/notifications' },
-    { icon: <MessagesSquare size={20} />, label: 'Contact Requests', path: '/admin/requests' },
     { icon: <UserPlus size={20} />, label: 'Admin Invites', path: '/admin/invites' },
     { icon: <UserCog size={20} />, label: 'My Profile', path: '/admin/profile' },
   ];
@@ -168,10 +151,6 @@ const AdminLayout = ({ children }) => {
               {item.path === '/admin/notifications' && unreadNotificationCount > 0 ? (
                 <span className="nav-request-badge nav-notification-badge" aria-label={`${unreadNotificationCount} unread notifications`}>
                   {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                </span>
-              ) : item.path === '/admin/requests' && openRequestCount > 0 ? (
-                <span className="nav-request-badge" aria-label={`${openRequestCount} open contact requests`}>
-                  {openRequestCount > 99 ? '99+' : openRequestCount}
                 </span>
               ) : null}
             </Link>
