@@ -57,17 +57,17 @@ Deno.serve(async (request) => {
     consumed = true;
     const userId = data.user.id;
     const { data: profile, error: profileError } = await admin.from('profiles').select('role').eq('id', userId).single();
-    if (profileError || profile?.role !== 'student') {
-      return json({ error: 'Student account required', code: 'student_required', tokenConsumed: true }, 403);
+    if (profileError || !['student', 'admin'].includes(profile?.role)) {
+      return json({ error: 'Student or administrator account required', code: 'account_required', tokenConsumed: true }, 403);
     }
 
     if (action === 'username') {
-      const { data: result, error: updateError } = await admin.rpc('recover_student_username', {
+      const { data: result, error: updateError } = await admin.rpc('recover_account_username', {
         target_user_id: userId,
         requested_username: normalizedUsername,
       });
       if (updateError) {
-        const safeErrors = ['That username is already in use', 'Choose a different username', 'Student account required'];
+        const safeErrors = ['That username is already in use', 'Choose a different username', 'Student or administrator account required'];
         const safeMessage = safeErrors.find((message) => updateError.message === message);
         return json({ error: safeMessage ?? 'Unable to recover username. Request a new link before retrying.', tokenConsumed: true }, safeMessage ? 400 : 500);
       }

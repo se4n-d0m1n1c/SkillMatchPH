@@ -39,7 +39,7 @@ const AdminContactForm = ({ onBack }) => {
     <section className="glass-card admin-contact-card recovery-card" aria-labelledby="recovery-request-title">
       <div className="form-header">
         <h3 id="recovery-request-title" ref={heading} tabIndex={-1}>Recover account</h3>
-        <p>Get an email link to change your password or username. Each link can be used once.</p>
+        <p>Students and administrators can get an email link to change their password or username. Each link can be used once.</p>
       </div>
       <form className="auth-form" onSubmit={submit} aria-busy={sending}>
         <div>

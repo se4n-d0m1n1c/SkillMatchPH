@@ -92,6 +92,7 @@ const RecoverAccount = () => {
     // A refusal such as a gateway authorization failure leaves the link usable.
     const consumed = result?.tokenConsumed === true
       || result?.code === 'invalid_recovery_link'
+      || result?.code === 'account_required'
       || result?.code === 'student_required';
     if (consumed) setTokenHash('');
 

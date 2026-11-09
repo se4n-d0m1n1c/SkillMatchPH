@@ -48,6 +48,21 @@ Deno.serve(async (request) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    // Legacy recovery links already carry a session. Keep password verification
+    // above for both roles, and let the admin RPC scope the update to auth.uid().
+    const { data: profile, error: profileError } = await adminClient
+      .from('profiles').select('role').eq('id', user.id).single();
+    if (profileError || !['student', 'admin'].includes(profile?.role)) {
+      return json({ error: 'Student or administrator account required' }, 403);
+    }
+    if (profile.role === 'admin') {
+      const { data, error } = await callerClient.rpc('update_own_admin_username', {
+        requested_username: normalizedUsername,
+      });
+      if (error) return json({ error: error.message }, 400);
+      return json({ username: data });
+    }
+
     const { data, error } = await adminClient.rpc('change_student_username_after_verification', {
       target_user_id: user.id,
       requested_username: normalizedUsername,

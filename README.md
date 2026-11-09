@@ -54,6 +54,10 @@ SkillMatchPH is a career pathing application designed for senior high school stu
    `SUPABASE_SERVICE_ROLE_KEY` secrets automatically. Set `VITE_ADMIN_CONTACT_EMAIL`
    in the frontend environment to show a clickable administrator contact on login.
 
+For student and administrator email recovery, follow
+[supabase/EMAIL_RECOVERY_SETUP.md](supabase/EMAIL_RECOVERY_SETUP.md), including
+both recovery SQL scripts and Edge Function deployments.
+
 ### Running Locally
 
 To start the development server:
